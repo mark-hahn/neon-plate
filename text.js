@@ -63,13 +63,6 @@ const distPntToLine = (pnt, start, end) => {
   return [dist, nearest];
 }
 
-const strParam = "a";
-
-const prevVecs = [];
-const hulls    = [];
-let   radius   = 1;
-let   lastPoint = null;
-
 const showVec = (pfx, vec) => {
   console.log( pfx +
     vec[0][0].toString().padStart(2) + ','    + 
@@ -78,18 +71,35 @@ const showVec = (pfx, vec) => {
     vec[1][1].toString().padStart(2));
 }
 
-const handlePoint = (point) => {
-  if(lastPoint) {
+const strParam = "Wyatt";
+
+const prevVecs  = [];
+const hulls     = [];
+let   radius    = 1;
+let   lastPoint = null;
+
+const addHole = (tailPoint, headPoint) => {
+  showVec(' - hole:', [tailPoint, headPoint]);
+}
+
+const handlePoint = (point, point2 = false, last = false) => {
+  if(lastPoint) { 
     const vec = [lastPoint, point];
-    showVec('', vec);
-    for(const prevVec of prevVecs) {
-      if(intersects(vec, prevVec))
+    showVec(' ', vec);
+    for(const prevVec of prevVecs.slice(0,-1)) {
+      if(intersects(vec, prevVec)) {
         showVec('  --X: ', prevVec);
+        vec =  [lastPoint, <-- intersection point -->];
+        // back up to point on segment far enough away
+
+      }
       else {
         const dstPntToLin = 
                 distPntToLine(point, prevVec[0], prevVec[0]);
         if(dstPntToLin[0] < 2*radius) 
           showVec('  --D:', dstPntToLin);
+          // back up to point on segment far enough away
+
       }
     }
     prevVecs.push(vec);
@@ -97,6 +107,8 @@ const handlePoint = (point) => {
     // radius += 1; //*= 1.5;
     hulls.push( hull(sphere({radius, center: lastPoint.concat(0)}), 
                      sphere({radius, center: point.concat(0)})) );
+    if(point2) addHole(point, lastPoint);
+    if(last)   addHole(lastPoint, point);
   }
   lastPoint = point;
 }
@@ -106,16 +118,21 @@ const main = () => {
   const spacing = 3;
   let xOffset = 0;
   for(const char of strParam) {
-    console.log("---- char:",char);
+    console.log("\n==== char:",char);
     const vecChar = vectorChar({xOffset}, char);
     const segs  = vecChar.segments;
     xOffset    += vecChar.width + spacing;
     segs.forEach( seg => {
+      console.log("--- seg ---");
+      let pointIdx = 0;
       lastPoint = null;
-      seg.forEach( point => handlePoint(point) );
+      seg.forEach( point => {
+        handlePoint(point, pointIdx == 1, pointIdx == seg.length-1);
+        pointIdx++;
+      });
     });
   };
-  console.log("---- end ----");
+  console.log("\n---- end ----");
   return hulls;
 };
 
