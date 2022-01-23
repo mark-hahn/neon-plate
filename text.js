@@ -63,6 +63,8 @@ const distPntToLine = (pnt, start, end) => {
   return [dist, nearest];
 }
 
+const strParam = "a";
+
 const prevVecs = [];
 const hulls    = [];
 let   radius   = 1;
@@ -79,10 +81,16 @@ const showVec = (pfx, vec) => {
 const handlePoint = (point) => {
   if(lastPoint) {
     const vec = [lastPoint, point];
-    showVec('handlePoint: ', vec);
+    showVec('', vec);
     for(const prevVec of prevVecs) {
       if(intersects(vec, prevVec))
-        showVec('  --X-- ', prevVec);
+        showVec('  --X: ', prevVec);
+      else {
+        const dstPntToLin = 
+                distPntToLine(point, prevVec[0], prevVec[0]);
+        if(dstPntToLin[0] < 2*radius) 
+          showVec('  --D:', dstPntToLin);
+      }
     }
     prevVecs.push(vec);
     
@@ -95,10 +103,9 @@ const handlePoint = (point) => {
 
 const main = () => {
   console.log("---- main ----");
-  const str = "Wy";
   const spacing = 3;
   let xOffset = 0;
-  for(const char of str) {
+  for(const char of strParam) {
     console.log("---- char:",char);
     const vecChar = vectorChar({xOffset}, char);
     const segs  = vecChar.segments;
