@@ -7,7 +7,7 @@ const { translate }     = jscad.maths.mat4;
 
 // check if two line segments intersect
 // https://algs4.cs.princeton.edu/91primitives
-const doIntersect = (segAB, segCD) => {
+const intersects = (segAB, segCD) => {
   const [[Ax,Ay], [Bx,By]] = segAB;
   const [[Cx,Cy], [Dx,Dy]] = segCD;
   const denominator = (Bx-Ax)*(Dy-Cy) - (By-Ay)*(Dx-Cx);
@@ -63,37 +63,36 @@ const distPntToLine = (pnt, start, end) => {
   return [dist, nearest];
 }
 
+const hulls  = [];
+let   radius = 1;
+let   lastPoint = null;
+
+const handlePoint = (point) => {
+  if(lastPoint) {
+    console.log(lastPoint[0].toString().padStart(2) + ','    + 
+                lastPoint[1].toString().padStart(2) + ' -> ' +
+                point[0].toString().padStart(2)     + ','    + 
+                point[1].toString().padStart(2));
+    // radius += 1; //*= 1.5;
+    hulls.push( hull(sphere({radius, center: lastPoint.concat(0)}), 
+                     sphere({radius, center: point.concat(0)})) );
+  }
+  lastPoint = point;
+}
+
 const main = () => {
   console.log("---- main ----");
-  const str = "Wyatt";
+  const str = "Wy";
   const spacing = 3;
   let xOffset = 0;
-  const hulls = [];
   for(const char of str) {
     console.log("---- char:",char);
     const vecChar = vectorChar({xOffset}, char);
     const segs  = vecChar.segments;
     xOffset    += vecChar.width + spacing;
-
     segs.forEach( seg => {
-      let i = 0;
-      let segStr = "  seg: ";
-      seg.forEach( pt2d =>
-        segStr += pt2d[0].toString().padStart(2) + ',' + 
-                  pt2d[1].toString().padStart(2) + ' -> ');
-      console.log(segStr.slice(0, -4));
-
-      let radius = 1;
-      if(seg.length > 1) {
-        let lastPt3d = seg.shift().concat(0);
-        seg.forEach( pt2d => {
-          // radius += 1; //*= 1.5;
-          const pt3d = pt2d.concat(0);
-          hulls.push( hull(sphere({radius, center: lastPt3d}), 
-                           sphere({radius, center: pt3d})) );
-          lastPt3d = pt3d;
-        });
-      };
+      lastPoint = null;
+      seg.forEach( point => handlePoint(point) );
     });
   };
   console.log("---- end ----");
