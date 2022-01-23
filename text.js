@@ -57,17 +57,16 @@ const distPntToLine = (pnt, start, end) => {
   const line_unitvec   = unit(line_vec);
   const pnt_vec_scaled = scale(pnt_vec, 1.0/line_len);
   const dt = dot(line_unitvec, pnt_vec_scaled);
-  const t  = Math.max(Math.min(d,1),0);
-  const nearest = scale(line_vec, t);
+  const t  = Math.max(Math.min(dt,1),0);
+  const nearest = add(scale(line_vec, t), start);
   const dist    = distance(nearest, pnt_vec);
-  const nearest = add(nearest, start);
   return [dist, nearest];
 }
 
 const main = () => {
-  const spacing = 3;
   console.log("---- main ----");
   const str = "Wyatt";
+  const spacing = 3;
   let xOffset = 0;
   const hulls = [];
   for(const char of str) {
