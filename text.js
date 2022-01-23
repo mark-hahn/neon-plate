@@ -63,16 +63,29 @@ const distPntToLine = (pnt, start, end) => {
   return [dist, nearest];
 }
 
-const hulls  = [];
-let   radius = 1;
+const prevVecs = [];
+const hulls    = [];
+let   radius   = 1;
 let   lastPoint = null;
+
+const showVec = (pfx, vec) => {
+  console.log( pfx +
+    vec[0][0].toString().padStart(2) + ','    + 
+    vec[0][1].toString().padStart(2) + ' -> ' +
+    vec[1][0].toString().padStart(2)     + ','    + 
+    vec[1][1].toString().padStart(2));
+}
 
 const handlePoint = (point) => {
   if(lastPoint) {
-    console.log(lastPoint[0].toString().padStart(2) + ','    + 
-                lastPoint[1].toString().padStart(2) + ' -> ' +
-                point[0].toString().padStart(2)     + ','    + 
-                point[1].toString().padStart(2));
+    const vec = [lastPoint, point];
+    showVec('handlePoint: ', vec);
+    for(const prevVec of prevVecs) {
+      if(intersects(vec, prevVec))
+        showVec('  --X-- ', prevVec);
+    }
+    prevVecs.push(vec);
+    
     // radius += 1; //*= 1.5;
     hulls.push( hull(sphere({radius, center: lastPoint.concat(0)}), 
                      sphere({radius, center: point.concat(0)})) );
