@@ -7,17 +7,22 @@ const { translate }     = jscad.maths.mat4;
 
 // check if two line segments intersect
 // https://algs4.cs.princeton.edu/91primitives
-const intersects = (segAB, segCD) => {
+const intersectionPoint = (segAB, segCD) => {
   const [[Ax,Ay], [Bx,By]] = segAB;
   const [[Cx,Cy], [Dx,Dy]] = segCD;
-  const denominator = (Bx-Ax)*(Dy-Cy) - (By-Ay)*(Dx-Cx);
+  const numeratorR  = ((Ay-Cy)*(Dx-Cx) - (Ax-Cx)*(Dy-Cy));
+  const numeratorS  = ((Ay-Cy)*(Bx-Ax) - (Ax-Cx)*(Dy-Cy));
+  const denominator = ((Bx-Ax)*(Dy-Cy) - (By-Ay)*(By-Ay));
   if(denominator == 0) return null; // parallel
-  const r = ((Ay-Cy)*(Dx-Cx) - (Ax-Cx)*(Dy-Cy)) / denominator;
-  const s = ((Ay-Cy)*(Bx-Ax) - (Ax-Cx)*(By-Ay)) / denominator;
-  return (r >= 0 && r <= 1 && s >= 0 && s <= 1);
+  const r = numeratorR / denominator;
+  const s = numeratorS / denominator;
+  if(!(r >= 0 && r <= 1 && s >= 0 && s <= 1)) 
+    return null;                           // doesn't intersect
+  return [Ax + r*(Bx-Ax), Ay + r*(By-Ay)]; // intersection point
 }
 
 // vector math
+// http://www.fundza.com/vectors/vectors.html
 const dot = (v,w) => {
   const [x,y,z] = v;
   const [X,Y,Z] = w;
@@ -50,6 +55,7 @@ const add = (v,w) => {
   return [x+X, y+Y, z+Z];
 }
 
+// http://www.fundza.com/vectors/point2line/index.html
 const distPntToLine = (pnt, start, end) => {
   const line_vec       = vector(start, end);
   const pnt_vec        = vector(start, pnt);
@@ -78,37 +84,55 @@ const hulls     = [];
 let   radius    = 1;
 let   lastPoint = null;
 
-const addHole = (tailPoint, headPoint) => {
-  showVec(' - hole:', [tailPoint, headPoint]);
+const addHull = (vec) => {
+  showVec(' - hull :', vec);
+  hulls.push( hull(sphere({radius, center: vec[0].concat(0)}), 
+                   sphere({radius, center: vec[1].concat(0)})) );
 }
 
-const handlePoint = (point, point2 = false, last = false) => {
-  if(lastPoint) { 
-    const vec = [lastPoint, point];
-    showVec(' ', vec);
-    for(const prevVec of prevVecs.slice(0,-1)) {
-      if(intersects(vec, prevVec)) {
-        showVec('  --X: ', prevVec);
-        vec =  [lastPoint, <-- intersection point -->];
+const addHole = (tailPoint, headPoint) => {
+  showVec(' - hole :', [tailPoint, headPoint]);
+}
+const backOff = (vec) => {
+  
+}
+
+const chkBackOff = (vec) => {
+  for(const prevVec of prevVecs.slice(0,-1)) {
+    if(intersectionPoint(vec, prevVec)) {
+      showVec('  --X: ', prevVec);
+      vec =  [lastPoint, <-- intersection point -->];
+      // back up to point on segment far enough away
+
+    }
+    else {
+      const dstPntToLin = 
+              distPntToLine(point, prevVec[0], prevVec[0]);
+      if(dstPntToLin[0] < 2*radius) 
+        showVec('  --D:', dstPntToLin);
         // back up to point on segment far enough away
 
-      }
-      else {
-        const dstPntToLin = 
-                distPntToLine(point, prevVec[0], prevVec[0]);
-        if(dstPntToLin[0] < 2*radius) 
-          showVec('  --D:', dstPntToLin);
-          // back up to point on segment far enough away
+    }
+  }
+}
 
-      }
+const handlePoint = (point, segVec2, segVecLast) => {
+  if(lastPoint) { 
+    if(segVec2) {
+      const newEndPoint = chkBackOff([lastPoint, point);
+
+      addHole(point, lastPoint);
+    }
+
+    const vec = [lastPoint, point];
+
+    showVec(' ', vec);
+
+
     }
     prevVecs.push(vec);
-    
-    // radius += 1; //*= 1.5;
-    hulls.push( hull(sphere({radius, center: lastPoint.concat(0)}), 
-                     sphere({radius, center: point.concat(0)})) );
-    if(point2) addHole(point, lastPoint);
-    if(last)   addHole(lastPoint, point);
+    addHull(vec);
+    if(segVecLast) addHole(lastPoint, point);
   }
   lastPoint = point;
 }
