@@ -14,8 +14,8 @@ const intersectionPoint = (segAB, segCD) => {
   const [[Ax,Ay], [Bx,By]] = segAB;
   const [[Cx,Cy], [Dx,Dy]] = segCD;
   const numeratorR  = ((Ay-Cy)*(Dx-Cx) - (Ax-Cx)*(Dy-Cy));
-  const numeratorS  = ((Ay-Cy)*(Bx-Ax) - (Ax-Cx)*(Dy-Cy));
-  const denominator = ((Bx-Ax)*(Dy-Cy) - (By-Ay)*(By-Ay));
+  const numeratorS  = ((Ay-Cy)*(Bx-Ax) - (Ax-Cx)*(By-Ay));
+  const denominator = ((Bx-Ax)*(Dy-Cy) - (By-Ay)*(Dx-Cx));
   if(denominator == 0) return null; // parallel
   const r = numeratorR / denominator;
   const s = numeratorS / denominator;
@@ -73,7 +73,7 @@ const distPntToVec = (pnt, vec) => {
 }
 
 const showVec = (pfx, vec) => {
-  console.log( pfx +
+  console.log( pfx + ' ' +
     vec[0][0].toString().padStart(2) + ','    + 
     vec[0][1].toString().padStart(2) + ' -> ' +
     vec[1][0].toString().padStart(2) + ','    + 
@@ -101,8 +101,12 @@ const backUpPoint = (prevVec, vec) => {
   return null;
 }
 
-const chkPoint = (vec) => {
-  for(const prevVec of prevVecs.slice(0,-1)) {
+const chkTooClose = (vec, first) => {
+  // don't check last vec unless this is first
+  let prevVecsTmp = (first ? prevVecs : prevVecs.slice(0,-1));
+  for(const prevVec of prevVecsTmp) {
+    showVec('vec', vec);
+    showVec('prevVec of prevVecsTmp', prevVec);
     let intPt = (intersectionPoint(vec, prevVec));
     if(intPt) {
       // vec intersects an old vec
@@ -130,7 +134,7 @@ const chkPoint = (vec) => {
 }
 
 const addHull = (vec) => {
-  showVec(' - hull :', vec);
+  showVec(' - hull', vec);
   hulls.push( 
     hull(sphere({hullRadius, center: vec[0].concat(0)}), 
          sphere({hullRadius, center: vec[1].concat(0)})) 
@@ -138,7 +142,7 @@ const addHull = (vec) => {
 }
 
 const addHole = (tailPoint, headPoint) => {
-  showVec(' - hole :', [tailPoint, headPoint]);
+  showVec(' - hole', [tailPoint, headPoint]);
 }
 
 // returns next seg idx
@@ -150,7 +154,7 @@ const handlePoint = (point, segIdx, segLast) => {
   }
   // not first point
   let vec = [lastPoint, point];
-  const vecs = chkPoint(vec);
+  const vecs = chkTooClose(vec, (segIdx == 1));
   if(vecs != null) { 
     const {vec1, vec2} = vecs;
     console.log({vec1, vec2});
@@ -197,7 +201,6 @@ const main = () => {
     segs.forEach( seg => {
       console.log("--- seg ---");
       let segIdx = 0;
-      lastPoint = null;
       seg.forEach( point => {
         segIdx = handlePoint(point, segIdx, segIdx == seg.length-1);
       });
