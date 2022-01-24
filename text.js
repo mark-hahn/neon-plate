@@ -3,7 +3,7 @@ const { sphere }        = jscad.primitives;
 const { vectorChar }    = jscad.text;
 const { hull }          = jscad.hulls;
 
-const strParam   = "X";
+const strParam   = "Wyatt";
 const hullRadius = 1;
 // distance in mm each step when backing up
 const stepDistMm = 0.1;
@@ -60,24 +60,29 @@ const add = (v,w) => {
 
 // http://www.fundza.com/vectors/point2line/index.html
 const distPntToVec = (pnt, vec) => {
-  const [start, end]   = vec;
+  pnt = [pnt[0], 0, pnt[1]];
+  let [start, end] = vec;
+  start = [start[0], 0, start[1]];
+  end   = [end[0],   0, end[1]];
   const line_vec       = vector(start, end);
   const pnt_vec        = vector(start, pnt);
   const line_len       = length(line_vec);
   const line_unitvec   = unit(line_vec);
   const pnt_vec_scaled = scale(pnt_vec, 1.0/line_len);
-  const dt = dot(line_unitvec, pnt_vec_scaled);
-  const t  = Math.max(Math.min(dt,1),0);
-  const nearestPoint = add(scale(line_vec, t), start);
-  return distance(nearestPoint, pnt_vec);
+  const dt      = dot(line_unitvec, pnt_vec_scaled);
+  const t       = Math.max(Math.min(dt,1),0);
+  let   nearest = scale(line_vec, t);
+  const dist    = distance(nearest, pnt_vec);
+  // nearest = add(nearest, start);
+  return dist;
 }
 
 const showVec = (pfx, vec) => {
   console.log( pfx + ' ' +
-    vec[0][0].toString().padStart(2) + ','    + 
-    vec[0][1].toString().padStart(2) + ' -> ' +
-    vec[1][0].toString().padStart(2) + ','    + 
-    vec[1][1].toString().padStart(2));
+    vec[0][0].toFixed(2).padStart(2) + ','    + 
+    vec[0][1].toFixed(2).padStart(2) + ' -> ' +
+    vec[1][0].toFixed(2).padStart(2) + ','    + 
+    vec[1][1].toFixed(2).padStart(2));
 }
 
 const prevVecs  = [];
@@ -86,18 +91,29 @@ let   lastPoint = null;
 
 // return point on vec far enough away from prevVec
 const backUpPoint = (prevVec, vec) => {
+  // vec is A -> B
   const [[Ax, Ay],[Bx, By]] = vec;
+  // showVec('enter backUpPoint, prevVec', prevVec);
+  // showVec('enter backUpPoint, vec', vec);
+
   const vecW = Bx-Ax;
   const vecH = By-Ay;
   const vecLen = Math.sqrt((vecW*vecW)+(vecH*vecH));
+
   for(let distOnVec = 0; distOnVec < vecLen; 
             distOnVec += stepDistMm) {
     const frac       = distOnVec/vecLen;
     const trialPoint = [Ax+frac*vecW, Ay+frac*vecH];
     const dist2prev  = distPntToVec(trialPoint, prevVec);
+    // console.log({vecW, vecH, vecLen:vecLen.toFixed(2)});
+    // console.log({frac:frac.toFixed(3), 
+    //              dist2prev:dist2prev.toFixed(2)});
+    // console.log('trialPoint', 
+    //              trialPoint[0].toFixed(2), trialPoint[1].toFixed(2));
     if(dist2prev > (2 * hullRadius)) return trialPoint;
   }
   // vec was shorter then stepDistMm
+  // console.log('vec was shorter then stepDistMm');
   return null;
 }
 
@@ -105,18 +121,19 @@ const chkTooClose = (vec, first) => {
   // don't check last vec unless this is first
   let prevVecsTmp = (first ? prevVecs : prevVecs.slice(0,-1));
   for(const prevVec of prevVecsTmp) {
-    showVec('vec', vec);
-    showVec('prevVec of prevVecsTmp', prevVec);
     let intPt = (intersectionPoint(vec, prevVec));
     if(intPt) {
+      // console.log('vec intersects an old vec');
       // vec intersects an old vec
       // split vec in two with both vecs far enough away
       let vec1 = null;
       let vec2 = null;
-      const backUpPt1 = backUpPoint(prevVec, [vec[0], intPt]);
+      const backUpPt1 = backUpPoint(prevVec, [intPt, vec[0]]);
       if(backUpPt1) vec1 = [vec[0], backUpPt1];
-      const backUpPt2 = backUpPoint(prevVec, [vec[1], intPt]);
+      // console.log('intersected, backUpPt1', backUpPt1);
+      const backUpPt2 = backUpPoint(prevVec, [intPt, vec[1]]);
       if(backUpPt2) vec2 = [backUpPt2, vec[1]];
+      // console.log('intersected, backUpPt2', backUpPt2);
       return {vec1, vec2};
     }
     const dist2prev = distPntToVec(vec[1], prevVec);
@@ -125,6 +142,7 @@ const chkTooClose = (vec, first) => {
       // back up to point on vec far enough away
       let vec1 = null;
       const backUpPt = backUpPoint(prevVec, vec);
+      // console.log('dist chk, backUpPoint result', backUpPt);
       if(backUpPt) vec1 = [vec[0], backUpPt];
       return {vec1, vec2: null};
     }
@@ -154,11 +172,13 @@ const handlePoint = (point, segIdx, segLast) => {
   }
   // not first point
   let vec = [lastPoint, point];
+  console.log('handlePoint vec', vec[0], vec[1]);
+
   const vecs = chkTooClose(vec, (segIdx == 1));
+  // console.log('chkTooClose result', vecs);
   if(vecs != null) { 
     const {vec1, vec2} = vecs;
-    console.log({vec1, vec2});
-    showVec(' .. close', vec1);
+    showVec('> close', vec1);
     // point was too close
     // truncated vec1 is now last in segment
     addHull(vec1);
@@ -166,7 +186,7 @@ const handlePoint = (point, segIdx, segLast) => {
     prevVecs.push(vec1);
     lastPoint = null;
     if(vec2) {
-      showVec('++ split', vec2);
+      showVec('> split', vec2);
       // had intersetion
       // vec was split into vec1 and vec2
       // handle vec2 as first in new segment
