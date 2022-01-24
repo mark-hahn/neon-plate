@@ -3,7 +3,7 @@ const { sphere }        = jscad.primitives;
 const { vectorChar }    = jscad.text;
 const { hull }          = jscad.hulls;
 
-const strParam   = "Wyatt";
+const strParam   = "X";
 const hullRadius = 1;
 // distance in mm each step when backing up
 const stepDistMm = 0.1;
@@ -84,25 +84,13 @@ const prevVecs  = [];
 const hulls     = [];
 let   lastPoint = null;
 
-const addHull = (vec) => {
-  showVec(' - hull :', vec);
-  hulls.push( 
-    hull(sphere({hullRadius, center: vec[0].concat(0)}), 
-         sphere({hullRadius, center: vec[1].concat(0)})) 
-  );
-}
-
-const addHole = (tailPoint, headPoint) => {
-  showVec(' - hole :', [tailPoint, headPoint]);
-}
-
 // return point on vec far enough away from prevVec
 const backUpPoint = (prevVec, vec) => {
   const [[Ax, Ay],[Bx, By]] = vec;
   const vecW = Bx-Ax;
   const vecH = By-Ay;
   const vecLen = Math.sqrt((vecW*vecW)+(vecH*vecH));
-  for(const distOnVec = 0; distOnVec < vecLen; 
+  for(let distOnVec = 0; distOnVec < vecLen; 
             distOnVec += stepDistMm) {
     const frac       = distOnVec/vecLen;
     const trialPoint = [Ax+frac*vecW, Ay+frac*vecH];
@@ -117,8 +105,7 @@ const chkPoint = (vec) => {
   for(const prevVec of prevVecs.slice(0,-1)) {
     let intPt = (intersectionPoint(vec, prevVec));
     if(intPt) {
-      showVec('  --X: ', prevVec, intPt);
-      // vec intersects a previous vector
+      // vec intersects an old vec
       // split vec in two with both vecs far enough away
       let vec1 = null;
       let vec2 = null;
@@ -130,8 +117,7 @@ const chkPoint = (vec) => {
     }
     const dist2prev = distPntToVec(vec[1], prevVec);
     if(dist2prev < (2 * hullRadius)) {
-      showVec('  --D:', dstPntToLin);
-      // latest point too close to old vec
+      // latest point too close to an old vec
       // back up to point on vec far enough away
       let vec1 = null;
       const backUpPt = backUpPoint(prevVec, vec);
@@ -139,47 +125,64 @@ const chkPoint = (vec) => {
       return {vec1, vec2: null};
     }
   }
-  // point not too close to any prev vec
+  // vec not too close to any prev vec
   return null;
 }
 
-// returns false if point deleted
+const addHull = (vec) => {
+  showVec(' - hull :', vec);
+  hulls.push( 
+    hull(sphere({hullRadius, center: vec[0].concat(0)}), 
+         sphere({hullRadius, center: vec[1].concat(0)})) 
+  );
+}
+
+const addHole = (tailPoint, headPoint) => {
+  showVec(' - hole :', [tailPoint, headPoint]);
+}
+
+// returns next seg idx
 const handlePoint = (point, segIdx, segLast) => {
-  if(lastPoint == null) { // first point
-    lastPoint = chkPoint([null, point]);
+  if(segIdx == 0) {
+    // first point
+    lastPoint = point;
+    return 1; // next segidx is 1
   }
-  else {                   // not first point
-    let vec = [lastPoint, point];
-    // if vec too close newPoint is fractional point on vec
-    const newPoint = chkPoint(vec);
-    if(newPoint != null) { 
-      // point too close, 
-
-
-      // entire vector too close, remove it
-      if(prevVecs.length == 0) {
-        // vec is first in seg, delete seg
-        lastPoint = null;
-        return false;
-      }
-      // remove last vector in history
-      prevVecs  = prevVecs.slice(0,-1);
-      lastPoint = point;
-      vec = prevVecs.slice(-1);  // replace current vec with last
-      point = vec[0];
-    } 
-    else {
-      // point not too close
-      point = newPoint;
-      if(segIdx = 1) addHole(point, lastPoint); // add first hole
-      showVec(' ', vec);
-      prevVecs.push(vec);
-      addHull(vec);
-      if(segLast) addHole(lastPoint, point);
-      lastPoint = point;
+  // not first point
+  let vec = [lastPoint, point];
+  const vecs = chkPoint(vec);
+  if(vecs != null) { 
+    const {vec1, vec2} = vecs;
+    console.log({vec1, vec2});
+    showVec(' .. close', vec1);
+    // point was too close
+    // truncated vec1 is now last in segment
+    addHull(vec1);
+    addHole(vec1[0], vec1[1]);
+    prevVecs.push(vec1);
+    lastPoint = null;
+    if(vec2) {
+      showVec('++ split', vec2);
+      // had intersetion
+      // vec was split into vec1 and vec2
+      // handle vec2 as first in new segment
+      lastPoint = vec2[0];
+      handlePoint(vec2[1], 1, segLast);
+      if(!segLast) return 2;  // next segidx is 2
     }
+    // start new segment
+    lastPoint = null;
+    return 0; // next segidx is 0
   }
-  return true;
+  // point not too close
+  showVec(' ', vec);
+  if(segIdx = 1) 
+    addHole(point, lastPoint); // add first hole
+  addHull(vec);
+  if(segLast) addHole(lastPoint, point);
+  prevVecs.push(vec);
+  lastPoint = point;
+  return segIdx + 1; // next segidx
 }
 
 const main = () => {
@@ -193,16 +196,10 @@ const main = () => {
     xOffset    += vecChar.width + spacing;
     segs.forEach( seg => {
       console.log("--- seg ---");
-      let pointIdx = 0;
+      let segIdx = 0;
       lastPoint = null;
       seg.forEach( point => {
-        if(pointIdx == 0
-        if(!handlePoint(point, pointIdx, pointIdx == seg.length-1)) {
-          // split segment
-          pointIdx = 0;
-          return;
-        }
-        pointIdx++;
+        segIdx = handlePoint(point, segIdx, segIdx == seg.length-1);
       });
     });
   };
