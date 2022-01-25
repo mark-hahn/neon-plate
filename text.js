@@ -8,7 +8,7 @@ const {scale:transformScale} = jscad.transforms;
 
 const strParam  = "Wyatt";
 const showHoles = true;
-const showPlate = false;
+const showPlate = true;
 
 const hullRadius = 0.5;
 const textYofs   = 1; // fraction of hullRadius
@@ -339,6 +339,8 @@ const main = () => {
       console.log("\n--- seg ---");
       let segIdx = 0;
       seg.forEach( point => {
+        point[0] *= textScale;
+        point[1] *= textScale;
         segIdx = handlePoint(point, segIdx, segIdx == seg.length-1);
       });
     });
@@ -357,10 +359,7 @@ const main = () => {
   const yOfs = plateH*baseline - plateH/2;
   const zOfs = (plateDepth/2) - textYofs*hullRadius;
   hulls.forEach( hull => {
-    const scaledHull = 
-          transformScale([textScale,textScale,textScale], hull);
-    const xlatedHull = translate([xOfs, yOfs, zOfs],
-                                  scaledHull);
+    const xlatedHull = translate([xOfs, yOfs, zOfs], hull);
     plate = subtract(plate, xlatedHull);
     // sizedHulls.push(xlatedHull);
   });
