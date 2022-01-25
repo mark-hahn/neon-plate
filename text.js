@@ -1,4 +1,5 @@
 const jscad                = require('@jscad/modeling');
+const {subtract}           = jscad.booleans;
 const {sphere, cuboid}     = jscad.primitives;
 const {vectorChar}         = jscad.text;
 const {hull}               = jscad.hulls;
@@ -14,7 +15,7 @@ const baseline   = 0.3;
 const plateW     = 160;
 const plateH     = 76.5;
 const plateDepth = 5;
-const holeDepth  = plateDepth + 1;
+const holeDepth  = plateDepth;
 const stepDist   = 0.1; // step size when backing up
 
 const pntEq = (A,B) => A[0] == B[0] && A[1] == B[1];
@@ -309,7 +310,7 @@ const main = () => {
   };
   console.log("\n---- end ----");
   // return hulls;
-  const plate = cuboid({
+  let plate = cuboid({
       size:   [plateW, plateH, plateDepth]}
   );
   xOffset -= spacing;
@@ -321,12 +322,11 @@ const main = () => {
     const xlatedHull = translate([padSides-plateW/2, 
                                   plateH*baseline-plateH/2,
                                   plateDepth-plateDepth/2], scaledHull);
-    sizedHulls.push(xlatedHull);
+    plate = subtract(plate, xlatedHull);
+    // sizedHulls.push(xlatedHull);
   });
-
-  // subtract();
-  const objects = sizedHulls.concat(plate);
-  return objects;
+  // const objects = sizedHulls.concat(plate);
+  return plate;
 };
 
 module.exports = {main};
