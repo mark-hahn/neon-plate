@@ -7,10 +7,11 @@ const {measureBoundingBox} = jscad.measurements;
 const {translate}          = jscad.transforms;
 const transformScale       = jscad.transforms.scale;
 
-const strParam   = "Wyatt";
+const strParam   = "Bowie";
 
 const hullRadius = 0.9;
 const padSides   = 10;
+const spacing    = 0;
 const baseline   = 0.3;
 const plateW     = 160;
 const plateH     = 76.5;
@@ -293,7 +294,6 @@ const handlePoint = (point, segIdx, segLast) => {
 
 const main = () => {
   console.log("---- main ----");
-  const spacing = 3;
   let xOffset = 0;
   for(const char of strParam) {
     console.log("\n==== char:",char);
