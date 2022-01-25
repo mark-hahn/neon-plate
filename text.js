@@ -9,7 +9,7 @@ const {scale:transformScale} = jscad.transforms;
 const strParam  = "a";
 const showHulls = true;
 const showHoles = true;
-const showPlate = true;
+const showPlate = false;
 
 const hullRadius = 0.75 + 0.2; // 0.2 is for expansion
 const textZofs   = 0.75; // fraction of radius, positive is deeper
@@ -350,7 +350,7 @@ const main = () => {
   console.log("\n---- end ----");
 
   let out = [];
-  if( showHulls) out = holes;
+  if( showHulls) out = hulls;
   if( showHoles) out = out.concat(holes);
   if(!showPlate) return out;
 
