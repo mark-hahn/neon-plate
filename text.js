@@ -9,8 +9,8 @@ const transformScale       = jscad.transforms.scale;
 
 const strParam   = "Wyatt";
 
-const hullRadius = 1.5;
-const textYofs   = 2.5; // fraction of hullRadius
+const hullRadius = 0.9;
+const textYofs   = 1; // fraction of hullRadius
 const padSides   = 10;
 const spacing    = 0;
 const baseline   = 0.3; // fraction of plateH
@@ -225,8 +225,10 @@ const chkTooClose = (vec, first) => {
 
 const addHull = (vec, z0 = 0, z1 = 0) => {
   if(z1 == 0) showVec(' - hull', vec);
-  hulls.push(hull(sphere({hullRadius, center: vec[0].concat(z0)}),
-                  sphere({hullRadius, center: vec[1].concat(z1)})));
+  hulls.push(
+    hull(sphere({hullRadius, center: vec[0].concat(z0)}),
+         sphere({hullRadius, center: vec[1].concat(z1)}))
+  );
 }
 
 const addHole = (tailPoint, headPoint) => {
@@ -319,7 +321,7 @@ const main = () => {
   const sizedHulls = [];
   const xOfs = padSides - plateW/2;
   const yOfs = plateH*baseline - plateH/2;
-  const zOfs = plateDepth - textYofs*hullRadius;
+  const zOfs = (plateDepth/2) - textYofs*hullRadius;
   hulls.forEach( hull => {
     const scaledHull = 
           transformScale([textScale,textScale,textScale], hull);
