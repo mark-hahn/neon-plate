@@ -7,12 +7,13 @@ const {measureBoundingBox} = jscad.measurements;
 const {translate}          = jscad.transforms;
 const transformScale       = jscad.transforms.scale;
 
-const strParam   = "Bowie";
+const strParam   = "Wyatt";
 
-const hullRadius = 0.9;
+const hullRadius = 1.5;
+const textYofs   = 2.5; // fraction of hullRadius
 const padSides   = 10;
 const spacing    = 0;
-const baseline   = 0.3;
+const baseline   = 0.3; // fraction of plateH
 const plateW     = 160;
 const plateH     = 76.5;
 const plateDepth = 5;
@@ -316,12 +317,14 @@ const main = () => {
   xOffset -= spacing;
   const textScale = (plateW - padSides*2) / xOffset;
   const sizedHulls = [];
+  const xOfs = padSides - plateW/2;
+  const yOfs = plateH*baseline - plateH/2;
+  const zOfs = plateDepth - textYofs*hullRadius;
   hulls.forEach( hull => {
     const scaledHull = 
           transformScale([textScale,textScale,textScale], hull);
-    const xlatedHull = translate([padSides-plateW/2, 
-                                  plateH*baseline-plateH/2,
-                                  plateDepth-plateDepth/2], scaledHull);
+    const xlatedHull = translate([xOfs, yOfs, zOfs],
+                                  scaledHull);
     plate = subtract(plate, xlatedHull);
     // sizedHulls.push(xlatedHull);
   });
