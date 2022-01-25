@@ -6,15 +6,16 @@ const {hull}                 = jscad.hulls;
 const {translate}            = jscad.transforms;
 const {scale:transformScale} = jscad.transforms;
 
-const strParam  = "Wyatt";
+const strParam  = "a";
+const showHulls = true;
 const showHoles = true;
 const showPlate = true;
 
-const hullRadius = 0.5;
-const textYofs   = 1; // fraction of hullRadius
-const padSides   = 10;
-const baseline   = 0.3; // fraction of plateH
-const plateW     = 160;
+const hullRadius = 0.75 + 0.2; // 0.2 is for expansion
+const textZofs   = 0.75; // fraction of radius, positive is deeper
+const padSides   = 20;
+const baseline   = 0.3;  // fraction of plateH
+const plateW     = 70;
 const plateH     = 76.5;
 const plateDepth = 5;
 const stepDist   = 0.1; // step size when backing up
@@ -251,15 +252,16 @@ const holes   = [];
 
 const addHole = (tailPoint, headPoint) => {
   showVec(' - hole', [tailPoint, headPoint]);
-  const w     = headPoint[0] - tailPoint[0];
-  const h     = headPoint[1] - tailPoint[1];
-  const len   = Math.sqrt(w*w + h*h);
-  const scale = plateDepth/len;
-  const x     = headPoint[0] + scale*w;
-  const y     = headPoint[1] + scale*h;
+  const w       = headPoint[0] - tailPoint[0];
+  const h       = headPoint[1] - tailPoint[1];
+  const len     = Math.sqrt(w*w + h*h);
+  const scale   = plateDepth/len;
+  const holeLen = plateDepth*1.414;
+  const x       = headPoint[0] + scale*w;
+  const y       = headPoint[1] + scale*h;
   holes.push(
     hull(sphere({hullRadius, center: headPoint.concat(0)}),
-         sphere({hullRadius, center: [x,y,-plateDepth]}))
+         sphere({hullRadius, center: [x,y,-holeLen]}))
   );
 }
 
@@ -347,18 +349,16 @@ const main = () => {
   };
   console.log("\n---- end ----");
 
-  if(showHoles) hulls = hulls.concat(holes);
+  let out = [];
+  if( showHulls) out = holes;
+  if( showHoles) out = out.concat(holes);
+  if(!showPlate) return out;
 
-  if(!showPlate) return hulls;
-
-  let plate = cuboid({
-      size: [plateW, plateH, plateDepth]}
-  );
-  const sizedHulls = [];
-  const xOfs = padSides - plateW/2;
-  const yOfs = plateH*baseline - plateH/2;
-  const zOfs = (plateDepth/2) - textYofs*hullRadius;
-  hulls.forEach( hull => {
+  let plate = cuboid({size: [plateW, plateH, plateDepth]});
+  const xOfs =  - plateW/2 + padSides;
+  const yOfs = -plateH/2 + plateH*baseline;
+  const zOfs =  plateDepth/2 - textZofs*hullRadius;
+  out.forEach( hull => {
     const xlatedHull = translate([xOfs, yOfs, zOfs], hull);
     plate = subtract(plate, xlatedHull);
     // sizedHulls.push(xlatedHull);
