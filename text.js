@@ -9,8 +9,8 @@ const transformScale       = jscad.transforms.scale;
 const strParam   = "Wyatt";
 
 const hullRadius = 0.9;
-const padSides   = 20;
-const baseline   = 0.2;
+const padSides   = 10;
+const baseline   = 0.3;
 const plateW     = 160;
 const plateH     = 76.5;
 const plateDepth = 5;
@@ -310,16 +310,17 @@ const main = () => {
   console.log("\n---- end ----");
   // return hulls;
   const plate = cuboid({
-      center: [plateW/2, plateH/2, plateDepth/2], 
       size:   [plateW, plateH, plateDepth]}
   );
+  xOffset -= spacing;
   const textScale = (plateW - padSides*2) / xOffset;
   const sizedHulls = [];
   hulls.forEach( hull => {
-    const scaledHull = transformScale([textScale,textScale,textScale], hull);
-    const xlatedHull = translate([(plateW-xOffset)/2, 
-                                   plateH*baseline,
-                                   plateDepth], scaledHull);
+    const scaledHull = 
+          transformScale([textScale,textScale,textScale], hull);
+    const xlatedHull = translate([padSides-plateW/2, 
+                                  plateH*baseline-plateH/2,
+                                  plateDepth-plateDepth/2], scaledHull);
     sizedHulls.push(xlatedHull);
   });
 
