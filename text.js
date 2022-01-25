@@ -1,11 +1,20 @@
-const jscad             = require('@jscad/modeling');
-const { sphere }        = jscad.primitives;
-const { vectorChar }    = jscad.text;
-const { hull }          = jscad.hulls;
+const jscad                = require('@jscad/modeling');
+const {sphere, cuboid}     = jscad.primitives;
+const {vectorChar}         = jscad.text;
+const {hull}               = jscad.hulls;
+const {measureBoundingBox} = jscad.measurements;
+const {translate}          = jscad.transforms;
+const transformScale       = jscad.transforms.scale;
 
 const strParam   = "Wyatt";
+
 const hullRadius = 0.9;
-const holeDepth  = 6;
+const padSides   = 20;
+const baseline   = 0.2;
+const plateW     = 160;
+const plateH     = 76.5;
+const plateDepth = 5;
+const holeDepth  = plateDepth + 1;
 const stepDist   = 0.1; // step size when backing up
 
 const pntEq = (A,B) => A[0] == B[0] && A[1] == B[1];
@@ -211,12 +220,10 @@ const chkTooClose = (vec, first) => {
   return null;
 }
 
-const addHull = (vec) => {
-  showVec(' - hull', vec);
-  hulls.push( 
-    hull(sphere({hullRadius, center: vec[0].concat(0)}), 
-         sphere({hullRadius, center: vec[1].concat(0)})) 
-  );
+const addHull = (vec, z0 = 0, z1 = 0) => {
+  if(z1 == 0) showVec(' - hull', vec);
+  hulls.push(hull(sphere({hullRadius, center: vec[0].concat(z0)}),
+                  sphere({hullRadius, center: vec[1].concat(z1)})));
 }
 
 const addHole = (tailPoint, headPoint) => {
@@ -227,10 +234,7 @@ const addHole = (tailPoint, headPoint) => {
   const scale = holeDepth / len;
   const x = headPoint[0] + scale*w;
   const y = headPoint[1] + scale*h;
-  hulls.push(
-    hull(sphere({hullRadius, center: headPoint.concat(0)}), 
-         sphere({hullRadius, center: [x,y,-holeDepth]}))
-  );
+  addHull([headPoint,[x,y]], 0, -holeDepth);
 }
 
 // returns next seg idx
@@ -304,7 +308,24 @@ const main = () => {
     });
   };
   console.log("\n---- end ----");
-  return hulls;
+  // return hulls;
+  const plate = cuboid({
+      center: [plateW/2, plateH/2, plateDepth/2], 
+      size:   [plateW, plateH, plateDepth]}
+  );
+  const textScale = (plateW - padSides*2) / xOffset;
+  const sizedHulls = [];
+  hulls.forEach( hull => {
+    const scaledHull = transformScale([textScale,textScale,textScale], hull);
+    const xlatedHull = translate([(plateW-xOffset)/2, 
+                                   plateH*baseline,
+                                   plateDepth], scaledHull);
+    sizedHulls.push(xlatedHull);
+  });
+
+  // subtract();
+  const objects = sizedHulls.concat(plate);
+  return objects;
 };
 
 module.exports = {main};
