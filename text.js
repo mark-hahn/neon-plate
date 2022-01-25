@@ -3,10 +3,10 @@ const { sphere }        = jscad.primitives;
 const { vectorChar }    = jscad.text;
 const { hull }          = jscad.hulls;
 
-const strParam   = "a";
+const strParam   = "Wyatt";
 const hullRadius = 0.9;
-// distance in mm each step when backing up
-const stepDistMm = 0.1;
+const holeDepth  = 6;
+const stepDist   = 0.1; // step size when backing up
 
 const pntEq = (A,B) => A[0] == B[0] && A[1] == B[1];
 
@@ -104,9 +104,9 @@ const backUpPoint = (prevVec, vec, chkHead) => {
   const vecW = Bx-Ax;
   const vecH = By-Ay;
   const vecLen = Math.sqrt((vecW*vecW)+(vecH*vecH));
-  // walk vec, each stepDistMm
+  // walk vec, each stepDist
   for(let distOnVec = 0; distOnVec < vecLen; 
-            distOnVec += stepDistMm) {      
+            distOnVec += stepDist) {      
     const frac       = distOnVec/vecLen;
     const trialPoint = (chkHead ?
              [Bx-frac*vecW, By-frac*vecH] :
@@ -127,7 +127,7 @@ const backUpPoint = (prevVec, vec, chkHead) => {
     //              trialPoint[0].toFixed(2), trialPoint[1].toFixed(2));
     if(dist2prev > (2 * hullRadius)) return trialPoint;
   }
-  // vec was shorter then stepDistMm
+  // vec was shorter then stepDist
   return null;
 }
 
@@ -221,6 +221,16 @@ const addHull = (vec) => {
 
 const addHole = (tailPoint, headPoint) => {
   showVec(' - hole', [tailPoint, headPoint]);
+  const w = headPoint[0] - tailPoint[0];
+  const h = headPoint[1] - tailPoint[1];
+  const len = Math.sqrt(w*w+h*h);
+  const scale = holeDepth / len;
+  const x = headPoint[0] + scale*w;
+  const y = headPoint[1] + scale*h;
+  hulls.push(
+    hull(sphere({hullRadius, center: headPoint.concat(0)}), 
+         sphere({hullRadius, center: [x,y,-holeDepth]}))
+  );
 }
 
 // returns next seg idx
