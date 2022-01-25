@@ -3,7 +3,7 @@ const { sphere }        = jscad.primitives;
 const { vectorChar }    = jscad.text;
 const { hull }          = jscad.hulls;
 
-const strParam   = "Wyatt";
+const strParam   = "a";
 const hullRadius = 0.9;
 // distance in mm each step when backing up
 const stepDistMm = 0.1;
@@ -112,11 +112,11 @@ const backUpPoint = (prevVec, vec, chkHead) => {
              [Bx-frac*vecW, By-frac*vecH] :
              [Ax+frac*vecW, Ay+frac*vecH]);
     const dist2prev  = distPntToVec(trialPoint, prevVec);
-    if(!chkHead) {
-      console.log('distPntToVec result (frac, chkHead)', frac, chkHead);
-      console.log('debug vec, trialPoint, dist2prev:', 
-                              trialPoint, dist2prev);
-    }
+    // if(!chkHead) {
+    //   console.log('distPntToVec result (frac, chkHead)', frac, chkHead);
+    //   console.log('debug vec, trialPoint, dist2prev:', 
+    //                           trialPoint, dist2prev);
+    // }
     // console.log('after debug');
 
     // console.log('after distPntToVec');
@@ -162,23 +162,23 @@ const chkTooClose = (vec, first) => {
       let vec2 = null;
       const backUpPt2 = backUpPoint(prevVec, [intPt, vec[1]]);
       if(backUpPt2) vec2 = [backUpPt2, vec[1]];
-      console.log('intersected, backUpPt2', backUpPt2);
+      console.log('             backUpPt2', backUpPt2);
 
       return {vec1, vec2};
     }
     // ------ check for either vec end point too close ------
     // tail point of vec only checked on first vector
     if(first) {
-      console.log('starting tail dist chk');
+      // console.log('starting tail dist chk');
       const dist2prev = distPntToVec(vec[0], prevVec);
       if(dist2prev < (2 * hullRadius)) {
         // tail end point too close to an old vec
         // back up to point on vec far enough away
         let vec1 = null;
         const backUpPt = backUpPoint(prevVec, vec, false);
-        console.log('tail dist chk, backUpPoint result', backUpPt);
+        // console.log('tail dist chk, backUpPoint result', backUpPt);
         if(backUpPt) {
-          console.log('vec tail too close to prev vec');
+          // console.log('vec tail too close to prev vec');
           return {vec1:[backUpPt, vec[1]], vec2: null};
         }
         else {
@@ -195,14 +195,14 @@ const chkTooClose = (vec, first) => {
       // back up to point on vec far enough away
       let vec1 = null;
       const backUpPt = backUpPoint(prevVec, vec, true);
-      console.log('head dist chk, backUpPoint result', backUpPt);
+      // console.log('head dist chk, backUpPoint result', backUpPt);
       if(backUpPt) {
         vec1 = [vec[0], backUpPt];
         showVec('head dist chk, vec1', vec1);
         return {vec1, vec2: null};
       }
       else {
-        console.log('head dist chk, both ends too close');
+        // console.log('head dist chk, both ends too close');
         return {vec1: null, vec2: null};
       }
     }
@@ -228,13 +228,14 @@ const handlePoint = (point, segIdx, segLast) => {
   if(segIdx == 0) {
     // first point
     console.log('first point of segment', point[0], point[1]);
-    console.log('only setting lastPoint');
+    // console.log('only setting lastPoint');
     lastPoint = point;
     return 1; // next segidx is 1
   }
   // not first point
   let vec = [lastPoint, point];
-  console.log('handlePoint vec, segIdx', vec[0], vec[1], segIdx);
+  console.log('handlePoint vec, segIdx, segLast',
+                vec[0], vec[1], segIdx, segLast);
 
   const vecs = chkTooClose(vec, (segIdx == 1));
   if(vecs != null) { 
@@ -248,9 +249,9 @@ const handlePoint = (point, segIdx, segLast) => {
     }
     showVec('> close', vec1);
     // point was too close
-    // truncated vec1 is now last in segment
+    if(segIdx == 1) addHole(point, vec1[0]); // add first hole
     addHull(vec1);
-    addHole(vec1[0], vec1[1]);
+    // addHole(vec1[0], vec1[1]);
     prevVecs.push(vec1);
     if(vec2) {
       showVec('> split', vec2);
@@ -261,15 +262,15 @@ const handlePoint = (point, segIdx, segLast) => {
       handlePoint(vec2[1], 1, segLast);
       if(!segLast) return 2;  // next segidx is 2
     }
+    if(segLast) addHole(vec1[0], vec1[1]); // add last hole
     lastPoint = vec1[1];
     return segIdx + 1; // next segidx
   }
   // point not too close
   showVec(' ', vec);
-  if(segIdx = 1) 
-    addHole(point, lastPoint); // add first hole
+  if(segIdx == 1) addHole(point, lastPoint); // add first hole
   addHull(vec);
-  if(segLast) addHole(lastPoint, point);
+  if(segLast) addHole(lastPoint, point); // add last hole
   prevVecs.push(vec);
   lastPoint = point;
   return segIdx + 1; // next segidx
