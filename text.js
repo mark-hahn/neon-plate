@@ -1,24 +1,26 @@
 const jscad                  = require('@jscad/modeling');
-const {subtract}             = jscad.booleans;
+const {union, subtract}      = jscad.booleans;
 const {sphere, cuboid}       = jscad.primitives;
 const {vectorChar}           = jscad.text;
 const {hull}                 = jscad.hulls;
 const {translate}            = jscad.transforms;
 const {scale:transformScale} = jscad.transforms;
 
-const strParam  = "a";
+const strParam  = "Wyatt";
 const showHulls = true;
 const showHoles = true;
-const showPlate = false;
+const showPlate = true;
 
-const hullRadius = 0.75 + 0.2; // 0.2 is for expansion
-const textZofs   = 0.75; // fraction of radius, positive is deeper
-const padSides   = 20;
-const baseline   = 0.3;  // fraction of plateH
-const plateW     = 70;
+const radius     = 0.75 + 0.2; // 0.2 is for expansion
+const stepDist   = 0.1;        // step size when backing up
+const segments   = 16;         // sphere segments
+const holeRadius = 3*radius;   // only affects bottom sphere
+const plateW     = 180;
 const plateH     = 76.5;
 const plateDepth = 5;
-const stepDist   = 0.1; // step size when backing up
+const textZofs   = 0.75;  // fraction of radius, bigger is deeper
+const padSides   = 20;
+const baseline   = 0.3;   // fraction of plateH
 
 const pntEq = (A,B) => A[0] == B[0] && A[1] == B[1];
 
@@ -124,7 +126,7 @@ const backUpPoint = (prevVec, vec, chkHead) => {
       (chkHead ? [Bx-frac*vecW, By-frac*vecH]
                : [Ax+frac*vecW, Ay+frac*vecH]);
     const dist2prev  = distPntToVec(trialPoint, prevVec);
-    if(dist2prev > (2 * hullRadius)) return trialPoint;
+    if(dist2prev > 2 * radius) return trialPoint;
   }
   // vec was shorter then stepDist
   return null;
@@ -191,7 +193,7 @@ const chkTooClose = (vec, first) => {
     if(first) {
       // console.log('starting tail dist chk');
       const dist2prev = distPntToVec(vec[0], prevVec);
-      if(dist2prev < (2 * hullRadius)) {
+      if(dist2prev < (2 * radius)) {
         // tail end point too close to an old vec
         // back up to point on vec far enough away
         let vec1 = null;
@@ -215,7 +217,7 @@ const chkTooClose = (vec, first) => {
     // console.log('starting head dist chk');
     const dist2prev = distPntToVec(vec[1], prevVec);
     // console.log('did head dist chk, dist2prev:', dist2prev);
-    if(dist2prev < (2 * hullRadius)) {
+    if(dist2prev < (2 * radius)) {
       // head end point too close to an old vec
       // back up to point on vec far enough away
       let vec1 = null;
@@ -237,32 +239,36 @@ const chkTooClose = (vec, first) => {
           vec1: null, vec2: null};
 }
 
-let textScale = 1;
-let hulls     = [];
+let textScale  = 1;
+let hullsUnion = null;
 
 const addHull = (vec) => {
   showVec(' - hull', vec);
-  hulls.push(
-    hull(sphere({hullRadius, center: vec[0].concat(0)}),
-         sphere({hullRadius, center: vec[1].concat(0)}))
-  );
+  if(showHulls) {
+    const aHull = 
+      hull(sphere({radius, segments, center: vec[0].concat(0)}),
+          sphere({radius, segments, center: vec[1].concat(0)}));
+    if(!hullsUnion) hullsUnion = aHull;
+    else hullsUnion = union(hullsUnion, aHull);
+    }
 }
-
-const holes   = [];
 
 const addHole = (tailPoint, headPoint) => {
   showVec(' - hole', [tailPoint, headPoint]);
-  const w       = headPoint[0] - tailPoint[0];
-  const h       = headPoint[1] - tailPoint[1];
-  const len     = Math.sqrt(w*w + h*h);
-  const scale   = plateDepth/len;
-  const holeLen = plateDepth*1.414;
-  const x       = headPoint[0] + scale*w;
-  const y       = headPoint[1] + scale*h;
-  holes.push(
-    hull(sphere({hullRadius, center: headPoint.concat(0)}),
-         sphere({hullRadius, center: [x,y,-holeLen]}))
-  );
+  if(showHoles) {
+    const w       = headPoint[0] - tailPoint[0];
+    const h       = headPoint[1] - tailPoint[1];
+    const len     = Math.sqrt(w*w + h*h);
+    const scale   = plateDepth/len;
+    const holeLen = plateDepth*1.414;
+    const x       = headPoint[0] + scale*w;
+    const y       = headPoint[1] + scale*h;
+    const hole = 
+      hull(sphere({radius, segments, center: headPoint.concat(0)}),
+          sphere({radius:holeRadius, segments, center: [x,y,-holeLen]}))
+    if(!hullsUnion) hullsUnion = hole;
+    else hullsUnion = union(hullsUnion, hole);
+  }
 }
 
 let lastPoint = null;
@@ -335,9 +341,9 @@ const main = () => {
   strWidth = 0;
   for(const char of strParam) {
     console.log("\n==== char:",char);
-    const {width, segments} = vectorChar({xOffset:strWidth}, char);
+    const {width, segments:segs} = vectorChar({xOffset:strWidth}, char);
     strWidth += width;
-    segments.forEach( seg => {
+    segs.forEach( seg => {
       console.log("\n--- seg ---");
       let segIdx = 0;
       seg.forEach( point => {
@@ -349,22 +355,16 @@ const main = () => {
   };
   console.log("\n---- end ----");
 
-  let out = [];
-  if( showHulls) out = hulls;
-  if( showHoles) out = out.concat(holes);
-  if(!showPlate) return out;
+  if(!showPlate) return hullsUnion;
 
-  let plate = cuboid({size: [plateW, plateH, plateDepth]});
-  const xOfs =  - plateW/2 + padSides;
-  const yOfs = -plateH/2 + plateH*baseline;
-  const zOfs =  plateDepth/2 - textZofs*hullRadius;
-  out.forEach( hull => {
-    const xlatedHull = translate([xOfs, yOfs, zOfs], hull);
-    plate = subtract(plate, xlatedHull);
-    // sizedHulls.push(xlatedHull);
-  });
-  // const objects = sizedHulls.concat(plate);
-  return plate;
+  const xOfs     = -plateW/2 + padSides;
+  const yOfs     = -plateH/2 + plateH*baseline;
+  const zOfs     =  plateDepth/2 - textZofs*radius;
+  const hullsOfs = translate([xOfs, yOfs, zOfs], hullsUnion);
+  const plate    = cuboid({size: [plateW, plateH, plateDepth]});
+  const plateOut = subtract(plate, hullsOfs);
+
+  return plateOut;
 };
 
 module.exports = {main};
