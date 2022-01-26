@@ -4,9 +4,8 @@ const {sphere, cuboid}       = jscad.primitives;
 const {vectorChar}           = jscad.text;
 const {hull}                 = jscad.hulls;
 const {translate}            = jscad.transforms;
-const {scale:transformScale} = jscad.transforms;
 
-const strParam  = "Wyatt";
+const strParam  = "a";
 const showHulls = true;
 const showHoles = true;
 const showPlate = true;
@@ -14,12 +13,15 @@ const showPlate = true;
 const radius     = 0.75 + 0.2; // 0.2 is for expansion
 const stepDist   = 0.1;        // step size when backing up
 const segments   = 16;         // sphere segments
-const holeRadius = 3*radius;   // only affects bottom sphere
+const bkupDist   = 3.0;        // dist to back up, frac times radius
+const holeTop    = 1.5*radius; // only affects top sphere
+const holeBot    = 3.0*radius; // only affects bottom sphere
+
 const plateW     = 180;
 const plateH     = 76.5;
 const plateDepth = 5;
 const textZofs   = 0.75;  // fraction of radius, bigger is deeper
-const padSides   = 20;
+const padSides   = 60;
 const baseline   = 0.3;   // fraction of plateH
 
 const pntEq = (A,B) => A[0] == B[0] && A[1] == B[1];
@@ -126,7 +128,7 @@ const backUpPoint = (prevVec, vec, chkHead) => {
       (chkHead ? [Bx-frac*vecW, By-frac*vecH]
                : [Ax+frac*vecW, Ay+frac*vecH]);
     const dist2prev  = distPntToVec(trialPoint, prevVec);
-    if(dist2prev > 2 * radius) return trialPoint;
+    if(dist2prev > bkupDist * radius) return trialPoint;
   }
   // vec was shorter then stepDist
   return null;
@@ -264,8 +266,8 @@ const addHole = (tailPoint, headPoint) => {
     const x       = headPoint[0] + scale*w;
     const y       = headPoint[1] + scale*h;
     const hole = 
-      hull(sphere({radius, segments, center: headPoint.concat(0)}),
-          sphere({radius:holeRadius, segments, center: [x,y,-holeLen]}))
+      hull(sphere({radius:holeTop, segments, center:headPoint.concat(0)}),
+           sphere({radius:holeBot, segments, center: [x,y,-holeLen]}))
     if(!hullsUnion) hullsUnion = hole;
     else hullsUnion = union(hullsUnion, hole);
   }
