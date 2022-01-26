@@ -18,8 +18,8 @@ const holeTop    = 1.5*radius; // only affects top sphere
 const holeBot    = 3.0*radius; // only affects bottom sphere
 
 const plateW     = 180;
-const plateH     = 76.5;
-const plateDepth = 5;
+const plateH     = 78.51;
+const plateDepth = 4.1;
 const textZofs   = 0.75;  // fraction of radius, bigger is deeper
 const padSides   = 20;
 const baseline   = 0.3;   // fraction of plateH
@@ -252,7 +252,7 @@ const addHull = (vec) => {
           sphere({radius, segments, center: vec[1].concat(0)}));
     if(!hullsUnion) hullsUnion = aHull;
     else hullsUnion = union(hullsUnion, aHull);
-    }
+  }
 }
 
 const addHole = (tailPoint, headPoint) => {
