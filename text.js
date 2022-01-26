@@ -5,7 +5,7 @@ const {vectorChar}           = jscad.text;
 const {hull}                 = jscad.hulls;
 const {translate}            = jscad.transforms;
 
-const strParam  = "a";
+const strParam  = "Wyatt";
 const showHulls = true;
 const showHoles = true;
 const showPlate = true;
@@ -21,7 +21,7 @@ const plateW     = 180;
 const plateH     = 76.5;
 const plateDepth = 5;
 const textZofs   = 0.75;  // fraction of radius, bigger is deeper
-const padSides   = 60;
+const padSides   = 20;
 const baseline   = 0.3;   // fraction of plateH
 
 const pntEq = (A,B) => A[0] == B[0] && A[1] == B[1];
