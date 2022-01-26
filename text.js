@@ -1,14 +1,14 @@
-const jscad                  = require('@jscad/modeling');
-const {union, subtract}      = jscad.booleans;
-const {sphere, cuboid}       = jscad.primitives;
-const {vectorChar}           = jscad.text;
-const {hull}                 = jscad.hulls;
-const {translate}            = jscad.transforms;
+const jscad             = require('@jscad/modeling');
+const {union, subtract} = jscad.booleans;
+const {sphere, cuboid}  = jscad.primitives;
+const {vectorChar}      = jscad.text;
+const {hull, hullChain} = jscad.hulls;
+const {translate}       = jscad.transforms;
 
-const strParam  = "Wyatt";
-const showHulls = true;
-const showHoles = true;
-const showPlate = true;
+const strParam = "Wyatt";
+const genHulls = true;
+const genHoles = true;
+const genPlate = true;
 
 const radius     = 0.75 + 0.2; // 0.2 is for expansion
 const stepDist   = 0.1;        // step size when backing up
@@ -241,23 +241,35 @@ const chkTooClose = (vec, first) => {
           vec1: null, vec2: null};
 }
 
-let textScale  = 1;
-let hullsUnion = null;
+const ptEq = (A,B) => (A[0] == B[0] && A[1] == B[1]);
 
-const addHull = (vec) => {
-  showVec(' - hull', vec);
-  if(showHulls) {
-    const aHull = 
-      hull(sphere({radius, segments, center: vec[0].concat(0)}),
-          sphere({radius, segments, center: vec[1].concat(0)}));
-    if(!hullsUnion) hullsUnion = aHull;
-    else hullsUnion = union(hullsUnion, aHull);
+let   textScale  = 1;
+const hullChains = [];
+let   spherePts  = [];
+
+const addToHullChains = () => {
+  if(spherePts.length) {
+    const spheres = spherePts.map((pt) =>
+      sphere({radius, segments, center: pt.concat(0)}));
+    hullChains.push(hullChain(...spheres));
   }
 }
 
+const addHull = (vec) => {
+  showVec(' - hull', vec);
+  if(spherePts.length && ptEq(spherePts.at(-1), vec[0]))
+    spherePts.push(vec[1]);
+  else {
+    addToHullChains();
+    spherePts = [vec[0], vec[1]];
+  }
+}
+
+holes = [];
+
 const addHole = (tailPoint, headPoint) => {
   showVec(' - hole', [tailPoint, headPoint]);
-  if(showHoles) {
+  if(genHoles) {
     const w       = headPoint[0] - tailPoint[0];
     const h       = headPoint[1] - tailPoint[1];
     const len     = Math.sqrt(w*w + h*h);
@@ -265,11 +277,11 @@ const addHole = (tailPoint, headPoint) => {
     const holeLen = plateDepth*1.414;
     const x       = headPoint[0] + scale*w;
     const y       = headPoint[1] + scale*h;
-    const hole = 
-      hull(sphere({radius:holeTop, segments, center:headPoint.concat(0)}),
-           sphere({radius:holeBot, segments, center: [x,y,-holeLen]}))
-    if(!hullsUnion) hullsUnion = hole;
-    else hullsUnion = union(hullsUnion, hole);
+    holes.push( hull(
+      sphere({radius:holeTop, segments, 
+              center:headPoint.concat(0)}),
+      sphere({radius:holeBot, segments, 
+              center: [x,y,-holeLen]})));
   }
 }
 
@@ -357,15 +369,16 @@ const main = () => {
   };
   console.log("\n---- end ----");
 
-  if(!showPlate) return hullsUnion;
+  addToHullChains(); // add remaining spheres to hullchains
+  if(!genPlate) return hullChains;
 
+  const allHulls = hullChains.concat(holes);
   const xOfs     = -plateW/2 + padSides;
   const yOfs     = -plateH/2 + plateH*baseline;
   const zOfs     =  plateDepth/2 - textZofs*radius;
-  const hullsOfs = translate([xOfs, yOfs, zOfs], hullsUnion);
+  const hullsOfs = translate([xOfs, yOfs, zOfs], allHulls);
   const plate    = cuboid({size: [plateW, plateH, plateDepth]});
   const plateOut = subtract(plate, hullsOfs);
-
   return plateOut;
 };
 
