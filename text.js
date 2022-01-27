@@ -10,8 +10,8 @@ let strParam    = "Clive";
 let fontsizeAdj = 1.1;
 let vertOfs     = -7;
 let genHulls    = true;
-let genHoles    = false;
-let genPlate    = false;
+let genHoles    = true;
+let genPlate    = true;
 
 const radius     = 0.75 + 0.2; // 0.2 is for expansion
 const stepDist   = 0.1;        // step size when backing up
@@ -288,7 +288,6 @@ const addHole = (tailPoint, headPoint) => {
       sphere({radius:holeBot, segments, 
               center: [x,y,-holeLen]})));
   }
-  console.log({holes});
 }
 
 let lastPoint = null;
@@ -362,14 +361,9 @@ const getParameterDefinitions = () => {
       initial: vertOfs, min: -plateH, max: plateH, 
       step: 1, caption: 'Vertical Offset:' 
     },
-    { name: 'genHulls', type: 'checkbox', checked: genHulls, 
-      initial: '20', caption: 'Show Channels:' 
-    },
-    { name: 'genHoles', type: 'checkbox', checked: genHoles, 
-      initial: '20', caption: 'Show Feedthroughs:' 
-    },
-    { name: 'genPlate', type: 'checkbox', checked: genPlate, 
-      initial: '20', caption: 'Show Plate:' 
+    { name: 'show', type: 'choice', caption: 'Show:', 
+      values: [0, 1, 2], initial: 0,
+      captions: ['Plate With Cutouts', 'Channels and Holes', 'Only Channels']
     },
   ];
 }
@@ -378,10 +372,14 @@ const main = (params) => {
   strParam    = params.strParam;
   vertOfs     = params.vertOfs;
   fontsizeAdj = params.fontsizeAdj;
-  genHulls    = params.genHulls;
-  genHoles    = params.genHoles;
-  genPlate    = params.genPlate;
-
+  switch(params.show) {
+    case 0: genHulls = true; genHoles = true; 
+            genPlate = true; break;
+    case 1: genHulls = true; genHoles = true; 
+            genPlate = false; break;
+    case 2: genHulls = true; genHoles = false; 
+            genPlate = false; break;
+  }
   console.log("---- main ----");
 
   let strWidth  = 0;
