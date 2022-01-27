@@ -9,17 +9,16 @@ const {translate}       = jscad.transforms;
 let strParam    = "Clive";
 let fontsizeAdj = 1.1;
 let vertOfs     = -7;
-
-const genHulls = true;
-const genHoles = true;
-const genPlate = true;
+let genHulls    = true;
+let genHoles    = false;
+let genPlate    = false;
 
 const radius     = 0.75 + 0.2; // 0.2 is for expansion
 const stepDist   = 0.1;        // step size when backing up
 const segments   = 16;         // sphere segments
 const bkupDist   = 3.0;        // dist to back up, frac times radius
 const holeTop    = 1.5*radius; // only affects top sphere
-const holeBot    = 3.0*radius; // only affects bottom sphere
+const holeBot    = 2.0*radius; // only affects bottom sphere
 
 const plateW     = 180;
 const plateH     = 78.51;
@@ -363,6 +362,15 @@ const getParameterDefinitions = () => {
       initial: vertOfs, min: -plateH, max: plateH, 
       step: 1, caption: 'Vertical Offset:' 
     },
+    { name: 'genHulls', type: 'checkbox', checked: genHulls, 
+      initial: '20', caption: 'Show Channels:' 
+    },
+    { name: 'genHoles', type: 'checkbox', checked: genHoles, 
+      initial: '20', caption: 'Show Feedthroughs:' 
+    },
+    { name: 'genPlate', type: 'checkbox', checked: genPlate, 
+      initial: '20', caption: 'Show Plate:' 
+    },
   ];
 }
 
@@ -370,6 +378,9 @@ const main = (params) => {
   strParam    = params.strParam;
   vertOfs     = params.vertOfs;
   fontsizeAdj = params.fontsizeAdj;
+  genHulls    = params.genHulls;
+  genHoles    = params.genHoles;
+  genPlate    = params.genPlate;
 
   console.log("---- main ----");
 
@@ -410,12 +421,11 @@ const main = (params) => {
   console.log("\n---- end ----");
 
   addToHullChains(); // add remaining spheres to hullchains
-  if(!genPlate) return hullChains;
-
   const allHulls = hullChains.concat(holes);
   const zOfs     =  plateDepth/2 - textZofs*radius;
-  console.log({hullChains, holes, allHulls});
   const hullsOfs = translate([xOfs, yOfs, zOfs], allHulls);
+
+  if(!genPlate) return hullsOfs;
   const plate    = cuboid({size: [plateW, plateH, plateDepth]});
   const plateOut = subtract(plate, hullsOfs);
   return plateOut;
