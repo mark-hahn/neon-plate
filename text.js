@@ -5,7 +5,11 @@ const {vectorChar}      = jscad.text;
 const {hull, hullChain} = jscad.hulls;
 const {translate}       = jscad.transforms;
 
-const strParam = "Wyatt";
+// ------ default params --------- 
+let strParam    = "Clive";
+let fontsizeAdj = 1.1;
+let vertOfs     = -7;
+
 const genHulls = true;
 const genHoles = true;
 const genPlate = true;
@@ -20,9 +24,10 @@ const holeBot    = 3.0*radius; // only affects bottom sphere
 const plateW     = 180;
 const plateH     = 78.51;
 const plateDepth = 4.1;
-const textZofs   = 0.75;  // fraction of radius, bigger is deeper
+const textZofs   = 0.75;  // fraction of diameter below the surface
 const padSides   = 20;
-const baseline   = 0.3;   // fraction of plateH
+const padTopBot  = 15;
+// const baseline   = 0.3;   // fraction of plateH
 
 const pntEq = (A,B) => A[0] == B[0] && A[1] == B[1];
 
@@ -243,7 +248,6 @@ const chkTooClose = (vec, first) => {
 
 const ptEq = (A,B) => (A[0] == B[0] && A[1] == B[1]);
 
-let   textScale  = 1;
 const hullChains = [];
 let   spherePts  = [];
 
@@ -257,11 +261,13 @@ const addToHullChains = () => {
 
 const addHull = (vec) => {
   showVec(' - hull', vec);
-  if(spherePts.length && ptEq(spherePts.at(-1), vec[0]))
-    spherePts.push(vec[1]);
-  else {
-    addToHullChains();
-    spherePts = [vec[0], vec[1]];
+  if(genHulls) {
+    if(spherePts.length && ptEq(spherePts.at(-1), vec[0]))
+      spherePts.push(vec[1]);
+    else {
+      addToHullChains();
+      spherePts = [vec[0], vec[1]];
+    }
   }
 }
 
@@ -283,6 +289,7 @@ const addHole = (tailPoint, headPoint) => {
       sphere({radius:holeBot, segments, 
               center: [x,y,-holeLen]})));
   }
+  console.log({holes});
 }
 
 let lastPoint = null;
@@ -343,20 +350,53 @@ const handlePoint = (point, segIdx, segLast) => {
   return segIdx + 1; // next segidx
 }
 
-const main = () => {
-  console.log("---- main ----");
-  let strWidth = 0;
-  for(const char of strParam) {
-    const {width} = vectorChar({strWidth}, char);
-    strWidth += width;
-  };
-  textScale = (plateW - padSides*2) / strWidth;
+const getParameterDefinitions = () => {
+  return [
+    { name: 'strParam', type: 'text', initial: strParam, 
+      size: 10, maxLength: 6, caption: 'Display Text:', 
+      placeholder: 'Enter 3 to 6 characters' 
+    },
+    { name: 'fontsizeAdj', type: 'number', initial: fontsizeAdj, min: 0.25, max: 4.0, 
+      step: 0.1, caption: 'Adjust Font Size:' 
+    },
+    { name: 'vertOfs', type: 'int', 
+      initial: vertOfs, min: -plateH, max: plateH, 
+      step: 1, caption: 'Vertical Offset:' 
+    },
+  ];
+}
 
-  strWidth = 0;
+const main = (params) => {
+  strParam    = params.strParam;
+  vertOfs     = params.vertOfs;
+  fontsizeAdj = params.fontsizeAdj;
+
+  console.log("---- main ----");
+
+  let strWidth  = 0;
+  let strHeight = 0;
   for(const char of strParam) {
-    console.log("\n==== char:",char);
-    const {width, segments:segs} = vectorChar({xOffset:strWidth}, char);
-    strWidth += width;
+    const {width, height} = vectorChar(char);
+    strWidth  += width;
+    strHeight = Math.max(strHeight, height);
+  };
+
+  console.log({strWidth, strHeight});
+  
+  const scaleW    = (plateW - padSides*2)  / strWidth;
+  const scaleH    = (plateH - padTopBot*2) / strHeight;
+  const textScale = Math.min(scaleW, scaleH) * fontsizeAdj;
+  strWidth       *= textScale;
+  strHeight      *= textScale;
+  const xOfs      = (plateW - strWidth)/2  - plateW/2;
+  const yOfs      = (plateH - strHeight)/2 - plateH/2 + vertOfs;
+
+  strWidth  = 0;
+  for(const char of strParam) {
+    console.log("\n======== CHAR:  " + char + '  ========');
+    const {width, segments:segs} = 
+           vectorChar({xOffset:strWidth}, char);
+    strWidth  += width;
     segs.forEach( seg => {
       console.log("\n--- seg ---");
       let segIdx = 0;
@@ -373,14 +413,13 @@ const main = () => {
   if(!genPlate) return hullChains;
 
   const allHulls = hullChains.concat(holes);
-  const xOfs     = -plateW/2 + padSides;
-  const yOfs     = -plateH/2 + plateH*baseline;
   const zOfs     =  plateDepth/2 - textZofs*radius;
+  console.log({hullChains, holes, allHulls});
   const hullsOfs = translate([xOfs, yOfs, zOfs], allHulls);
   const plate    = cuboid({size: [plateW, plateH, plateDepth]});
   const plateOut = subtract(plate, hullsOfs);
   return plateOut;
 };
 
-module.exports = {main};
+module.exports = {main, getParameterDefinitions};
 
