@@ -6,6 +6,8 @@ const {vectorChar}      = jscad.text;
 const {hull, hullChain} = jscad.hulls;
 const {translate, translateZ} = jscad.transforms;
 
+const debug = false;
+
 // ------ default params --------- 
 let strParam    = "Clive";
 let fontsizeAdj = 1.1;
@@ -21,8 +23,8 @@ const bkupDist   = 3.0;        // dist to back up, frac times radius
 const holeTop    = 1.5*radius; // only affects top sphere
 const holeBot    = 2.0*radius; // only affects bottom sphere
 
-const plateW      = 180;
-const plateH      = 78.51;
+const plateW      = 182.3;
+const plateH      = 84.4;
 const plateDepth  = 4.1;
 const filetRadius = 2;
 const textZofs    = 0.75;  // fraction of diameter below the surface
@@ -148,9 +150,7 @@ const chkTooClose = (vec, first) => {
   for(const prevVec of prevVecsTmp) {
 
     // ------ check ends touching  ------
-    // tail point of vec only checked on first vector
-    if( // first && 
-       (pntEq(prevVec[0], vec[0]) ||
+    if((pntEq(prevVec[0], vec[0]) ||
         pntEq(prevVec[1], vec[0]))) {
       // vec tail is touching prevVec head or tail
       showVec('tail touches prev', vec);
@@ -410,15 +410,22 @@ const main = (params) => {
     strHeight = Math.max(strHeight, height);
   };
 
-  console.log({strWidth, strHeight});
+  if (debug) console.log({strWidth, strHeight});
   
   const scaleW    = (plateW - padSides*2)  / strWidth;
   const scaleH    = (plateH - padTopBot*2) / strHeight;
-  const textScale = Math.min(scaleW, scaleH) * fontsizeAdj;
+  let   textScale = Math.min(scaleW, scaleH) * fontsizeAdj;
+
   strWidth       *= textScale;
   strHeight      *= textScale;
-  const xOfs      = (plateW - strWidth)/2  - plateW/2;
-  const yOfs      = (plateH - strHeight)/2 - plateH/2 + vertOfs;
+  let xOfs        = (plateW - strWidth)/2  - plateW/2;
+  let yOfs        = (plateH - strHeight)/2 - plateH/2 + vertOfs;
+
+  if (debug) {
+    textScale = 1;
+    xOfs      = 0;
+    yOfs      = 0
+  }
 
   strWidth  = 0;
   for(const char of strParam) {
@@ -448,16 +455,18 @@ const main = (params) => {
   const plate = cuboid({size: [plateW, plateH, plateDepth]});
 
   const notchedPlate = subtract(plate, 
-      translate( [0,0, -plateDepth/2],
-        cuboid({size: [filetRadius*4, filetRadius*4, plateDepth*4]})));
-      
-  // const roundedPlate = union(notchedPlate,    
-  //   cylinder({
-  //     center:[-plateW/2+filetRadius, plateH/2-filetRadius, 0],
-  //     height:plateDepth, radius:filetRadius}), 
-  //   cylinder({
-  //     center:[-plateW/2+filetRadius, plateH/2-filetRadius, 0],
-  //     height:plateDepth, radius:filetRadius}));;
+      translate( [-plateW/2 + filetRadius/2, plateH/2 - filetRadius/2, 0],
+        cuboid({size: [filetRadius, filetRadius, plateDepth]})),     
+      translate( [ plateW/2 - filetRadius/2, plateH/2 - filetRadius/2, 0],
+        cuboid({size: [filetRadius, filetRadius, plateDepth]})));      
+
+  const roundedPlate = union(notchedPlate,    
+    cylinder({
+      center:[-plateW/2 + filetRadius, plateH/2 - filetRadius, 0],
+      height:plateDepth, radius:filetRadius}), 
+    cylinder({
+      center:[ plateW/2 - filetRadius, plateH/2-filetRadius, 0],
+      height:plateDepth, radius:filetRadius}));;
 
   const boltOfs = 5.25;
 
@@ -474,10 +483,10 @@ const main = (params) => {
       [ plateW/2 - boltOfs, -plateH/2 + boltOfs, plateDepth/2],
       fhBolt_M3(plateDepth + 1));
 
-  const plateOut = subtract(notchedPlate, hullsOfs, 
+  const plateOut = subtract(roundedPlate, hullsOfs, 
                             boltUL, boltUR, boltBL,boltBR);
 
-  return notchedPlate;
+  return plateOut;
 };
 
 module.exports = {main, getParameterDefinitions};
