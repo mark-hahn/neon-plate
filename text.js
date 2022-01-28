@@ -1,9 +1,10 @@
 const jscad             = require('@jscad/modeling');
 const {union, subtract} = jscad.booleans;
-const {sphere, cuboid}  = jscad.primitives;
+const {sphere, cube, cuboid, cylinderElliptic, cylinder}  
+       = jscad.primitives;
 const {vectorChar}      = jscad.text;
 const {hull, hullChain} = jscad.hulls;
-const {translate}       = jscad.transforms;
+const {translate, translateZ} = jscad.transforms;
 
 // ------ default params --------- 
 let strParam    = "Clive";
@@ -355,7 +356,7 @@ const getParameterDefinitions = () => {
       placeholder: 'Enter 3 to 6 characters' 
     },
     { name: 'fontsizeAdj', type: 'number', initial: fontsizeAdj, min: 0.25, max: 4.0, 
-      step: 0.1, caption: 'Adjust Font Size:' 
+      step: 0.1, caption: 'Font Size:' 
     },
     { name: 'vertOfs', type: 'int', 
       initial: vertOfs, min: -plateH, max: plateH, 
@@ -368,66 +369,91 @@ const getParameterDefinitions = () => {
   ];
 }
 
-const main = (params) => {
-  strParam    = params.strParam;
-  vertOfs     = params.vertOfs;
-  fontsizeAdj = params.fontsizeAdj;
-  switch(params.show) {
-    case 0: genHulls = true; genHoles = true; 
-            genPlate = true; break;
-    case 1: genHulls = true; genHoles = true; 
-            genPlate = false; break;
-    case 2: genHulls = true; genHoles = false; 
-            genPlate = false; break;
-  }
-  console.log("---- main ----");
+// centerTopLoc = {[0,0,0]}
 
-  let strWidth  = 0;
-  let strHeight = 0;
-  for(const char of strParam) {
-    const {width, height} = vectorChar(char);
-    strWidth  += width;
-    strHeight = Math.max(strHeight, height);
-  };
+const bolt_Y3 = () => {
+  const topRadius   = 6.95;
+  const shaftRadius = 3.8;
+  const topH        = 1.9;
+  const zOfs        = -topH/2;
+  const cylH        = 12;  // anything longer than plate thickness 
+  const cylZofs     = -cylH/2;
 
-  console.log({strWidth, strHeight});
-  
-  const scaleW    = (plateW - padSides*2)  / strWidth;
-  const scaleH    = (plateH - padTopBot*2) / strHeight;
-  const textScale = Math.min(scaleW, scaleH) * fontsizeAdj;
-  strWidth       *= textScale;
-  strHeight      *= textScale;
-  const xOfs      = (plateW - strWidth)/2  - plateW/2;
-  const yOfs      = (plateH - strHeight)/2 - plateH/2 + vertOfs;
+  const top = translateZ(zOfs, cylinderElliptic(
+                {startRadius:[shaftRadius, shaftRadius], 
+                  endRadius:[topRadius,topRadius],
+                  height:topH}));
 
-  strWidth  = 0;
-  for(const char of strParam) {
-    console.log("\n======== CHAR:  " + char + '  ========');
-    const {width, segments:segs} = 
-           vectorChar({xOffset:strWidth}, char);
-    strWidth  += width;
-    segs.forEach( seg => {
-      console.log("\n--- seg ---");
-      let segIdx = 0;
-      seg.forEach( point => {
-        point[0] *= textScale;
-        point[1] *= textScale;
-        segIdx = handlePoint(point, segIdx, segIdx == seg.length-1);
-      });
-    });
-  };
-  console.log("\n---- end ----");
+  const shaft = translateZ(cylZofs, cylinder(
+                  {height:cylH, radius:shaftRadius}));
 
-  addToHullChains(); // add remaining spheres to hullchains
-  const allHulls = hullChains.concat(holes);
-  const zOfs     =  plateDepth/2 - textZofs*radius;
-  const hullsOfs = translate([xOfs, yOfs, zOfs], allHulls);
-
-  if(!genPlate) return hullsOfs;
-  const plate    = cuboid({size: [plateW, plateH, plateDepth]});
-  const plateOut = subtract(plate, hullsOfs);
-  return plateOut;
+  return union(top, shaft);
 };
+
+const main = (params) => {
+  return bolt_Y3();
+}
+
+//   strParam    = params.strParam;
+//   vertOfs     = params.vertOfs;
+//   fontsizeAdj = params.fontsizeAdj;
+//   switch(params.show) {
+//     case 0: genHulls = true; genHoles = true; 
+//             genPlate = true; break;
+//     case 1: genHulls = true; genHoles = true; 
+//             genPlate = false; break;
+//     case 2: genHulls = true; genHoles = false; 
+//             genPlate = false; break;
+//   }
+//   console.log("---- main ----");
+
+//   let strWidth  = 0;
+//   let strHeight = 0;
+//   for(const char of strParam) {
+//     const {width, height} = vectorChar(char);
+//     strWidth  += width;
+//     strHeight = Math.max(strHeight, height);
+//   };
+
+//   console.log({strWidth, strHeight});
+  
+//   const scaleW    = (plateW - padSides*2)  / strWidth;
+//   const scaleH    = (plateH - padTopBot*2) / strHeight;
+//   const textScale = Math.min(scaleW, scaleH) * fontsizeAdj;
+//   strWidth       *= textScale;
+//   strHeight      *= textScale;
+//   const xOfs      = (plateW - strWidth)/2  - plateW/2;
+//   const yOfs      = (plateH - strHeight)/2 - plateH/2 + vertOfs;
+
+//   strWidth  = 0;
+//   for(const char of strParam) {
+//     console.log("\n======== CHAR:  " + char + '  ========');
+//     const {width, segments:segs} = 
+//            vectorChar({xOffset:strWidth}, char);
+//     strWidth  += width;
+//     segs.forEach( seg => {
+//       console.log("\n--- seg ---");
+//       let segIdx = 0;
+//       seg.forEach( point => {
+//         point[0] *= textScale;
+//         point[1] *= textScale;
+//         segIdx = handlePoint(point, segIdx, segIdx == seg.length-1);
+//       });
+//     });
+//   };
+//   console.log("\n---- end ----");
+
+//   addToHullChains(); // add remaining spheres to hullchains
+//   const allHulls = hullChains.concat(holes);
+//   const zOfs     =  plateDepth/2 - textZofs*radius;
+//   const hullsOfs = translate([xOfs, yOfs, zOfs], allHulls);
+
+//   if(!genPlate) return hullsOfs;
+  
+//   const plate    = cuboid({size: [plateW, plateH, plateDepth]});
+//   const plateOut = subtract(plate, hullsOfs);
+//   return plateOut;
+// };
 
 module.exports = {main, getParameterDefinitions};
 
