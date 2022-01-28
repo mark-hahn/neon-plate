@@ -21,12 +21,13 @@ const bkupDist   = 3.0;        // dist to back up, frac times radius
 const holeTop    = 1.5*radius; // only affects top sphere
 const holeBot    = 2.0*radius; // only affects bottom sphere
 
-const plateW     = 180;
-const plateH     = 78.51;
-const plateDepth = 4.1;
-const textZofs   = 0.75;  // fraction of diameter below the surface
-const padSides   = 20;
-const padTopBot  = 15;
+const plateW      = 180;
+const plateH      = 78.51;
+const plateDepth  = 4.1;
+const filetRadius = 2;
+const textZofs    = 0.75;  // fraction of diameter below the surface
+const padSides    = 20;
+const padTopBot   = 15;
 // const baseline   = 0.3;   // fraction of plateH
 
 const pntEq = (A,B) => A[0] == B[0] && A[1] == B[1];
@@ -444,9 +445,19 @@ const main = (params) => {
 
   if(!genPlate) return hullsOfs;
   
-  const plate    = cuboid({size: [plateW, plateH, plateDepth]});
-  // const plateOut = subtract(plate, hullsOfs);
-          // fhBolt_M3([-plateW/2 +5.25, plateH/2 +5.25, plateDepth]));
+  const plate = cuboid({size: [plateW, plateH, plateDepth]});
+
+  const notchedPlate = subtract(plate, 
+      translate( [0,0, -plateDepth/2],
+        cuboid({size: [filetRadius*4, filetRadius*4, plateDepth*4]})));
+      
+  // const roundedPlate = union(notchedPlate,    
+  //   cylinder({
+  //     center:[-plateW/2+filetRadius, plateH/2-filetRadius, 0],
+  //     height:plateDepth, radius:filetRadius}), 
+  //   cylinder({
+  //     center:[-plateW/2+filetRadius, plateH/2-filetRadius, 0],
+  //     height:plateDepth, radius:filetRadius}));;
 
   const boltOfs = 5.25;
 
@@ -463,10 +474,10 @@ const main = (params) => {
       [ plateW/2 - boltOfs, -plateH/2 + boltOfs, plateDepth/2],
       fhBolt_M3(plateDepth + 1));
 
-  const plateOut = subtract(plate, hullsOfs, 
+  const plateOut = subtract(notchedPlate, hullsOfs, 
                             boltUL, boltUR, boltBL,boltBR);
 
-  return plateOut;
+  return notchedPlate;
 };
 
 module.exports = {main, getParameterDefinitions};
