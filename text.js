@@ -369,91 +369,105 @@ const getParameterDefinitions = () => {
   ];
 }
 
-// centerTopLoc = {[0,0,0]}
-
-const bolt_Y3 = () => {
-  const topRadius   = 6.95;
-  const shaftRadius = 3.8;
-  const topH        = 1.9;
+// flat-head M3 bolt
+const fhBolt_M3 = (length) => {
+  const plasticOfs  = 0.3
+  const topRadius   = 6/2  + plasticOfs;
+  const shaftRadius = 3/2  + plasticOfs;
+  const topH        = 1.86 + plasticOfs;
   const zOfs        = -topH/2;
-  const cylH        = 12;  // anything longer than plate thickness 
-  const cylZofs     = -cylH/2;
-
+  const cylH        = length - topH + 1; // 1mm excess
+  const cylZofs     = -cylH/2 - topH;
   const top = translateZ(zOfs, cylinderElliptic(
                 {startRadius:[shaftRadius, shaftRadius], 
                   endRadius:[topRadius,topRadius],
                   height:topH}));
-
   const shaft = translateZ(cylZofs, cylinder(
                   {height:cylH, radius:shaftRadius}));
-
   return union(top, shaft);
 };
 
 const main = (params) => {
-  return bolt_Y3();
-}
+  strParam    = params.strParam;
+  vertOfs     = params.vertOfs;
+  fontsizeAdj = params.fontsizeAdj;
+  switch(params.show) {
+    case 0: genHulls = true; genHoles = true; 
+            genPlate = true; break;
+    case 1: genHulls = true; genHoles = true; 
+            genPlate = false; break;
+    case 2: genHulls = true; genHoles = false; 
+            genPlate = false; break;
+  }
+  console.log("---- main ----");
 
-//   strParam    = params.strParam;
-//   vertOfs     = params.vertOfs;
-//   fontsizeAdj = params.fontsizeAdj;
-//   switch(params.show) {
-//     case 0: genHulls = true; genHoles = true; 
-//             genPlate = true; break;
-//     case 1: genHulls = true; genHoles = true; 
-//             genPlate = false; break;
-//     case 2: genHulls = true; genHoles = false; 
-//             genPlate = false; break;
-//   }
-//   console.log("---- main ----");
+  let strWidth  = 0;
+  let strHeight = 0;
+  for(const char of strParam) {
+    const {width, height} = vectorChar(char);
+    strWidth  += width;
+    strHeight = Math.max(strHeight, height);
+  };
 
-//   let strWidth  = 0;
-//   let strHeight = 0;
-//   for(const char of strParam) {
-//     const {width, height} = vectorChar(char);
-//     strWidth  += width;
-//     strHeight = Math.max(strHeight, height);
-//   };
-
-//   console.log({strWidth, strHeight});
+  console.log({strWidth, strHeight});
   
-//   const scaleW    = (plateW - padSides*2)  / strWidth;
-//   const scaleH    = (plateH - padTopBot*2) / strHeight;
-//   const textScale = Math.min(scaleW, scaleH) * fontsizeAdj;
-//   strWidth       *= textScale;
-//   strHeight      *= textScale;
-//   const xOfs      = (plateW - strWidth)/2  - plateW/2;
-//   const yOfs      = (plateH - strHeight)/2 - plateH/2 + vertOfs;
+  const scaleW    = (plateW - padSides*2)  / strWidth;
+  const scaleH    = (plateH - padTopBot*2) / strHeight;
+  const textScale = Math.min(scaleW, scaleH) * fontsizeAdj;
+  strWidth       *= textScale;
+  strHeight      *= textScale;
+  const xOfs      = (plateW - strWidth)/2  - plateW/2;
+  const yOfs      = (plateH - strHeight)/2 - plateH/2 + vertOfs;
 
-//   strWidth  = 0;
-//   for(const char of strParam) {
-//     console.log("\n======== CHAR:  " + char + '  ========');
-//     const {width, segments:segs} = 
-//            vectorChar({xOffset:strWidth}, char);
-//     strWidth  += width;
-//     segs.forEach( seg => {
-//       console.log("\n--- seg ---");
-//       let segIdx = 0;
-//       seg.forEach( point => {
-//         point[0] *= textScale;
-//         point[1] *= textScale;
-//         segIdx = handlePoint(point, segIdx, segIdx == seg.length-1);
-//       });
-//     });
-//   };
-//   console.log("\n---- end ----");
+  strWidth  = 0;
+  for(const char of strParam) {
+    console.log("\n======== CHAR:  " + char + '  ========');
+    const {width, segments:segs} = 
+           vectorChar({xOffset:strWidth}, char);
+    strWidth  += width;
+    segs.forEach( seg => {
+      console.log("\n--- seg ---");
+      let segIdx = 0;
+      seg.forEach( point => {
+        point[0] *= textScale;
+        point[1] *= textScale;
+        segIdx = handlePoint(point, segIdx, segIdx == seg.length-1);
+      });
+    });
+  };
+  console.log("\n---- end ----");
 
-//   addToHullChains(); // add remaining spheres to hullchains
-//   const allHulls = hullChains.concat(holes);
-//   const zOfs     =  plateDepth/2 - textZofs*radius;
-//   const hullsOfs = translate([xOfs, yOfs, zOfs], allHulls);
+  addToHullChains(); // add remaining spheres to hullchains
+  const allHulls = hullChains.concat(holes);
+  const zOfs     =  plateDepth/2 - textZofs*radius;
+  const hullsOfs = translate([xOfs, yOfs, zOfs], allHulls);
 
-//   if(!genPlate) return hullsOfs;
+  if(!genPlate) return hullsOfs;
   
-//   const plate    = cuboid({size: [plateW, plateH, plateDepth]});
-//   const plateOut = subtract(plate, hullsOfs);
-//   return plateOut;
-// };
+  const plate    = cuboid({size: [plateW, plateH, plateDepth]});
+  // const plateOut = subtract(plate, hullsOfs);
+          // fhBolt_M3([-plateW/2 +5.25, plateH/2 +5.25, plateDepth]));
+
+  const boltOfs = 5.25;
+
+  const boltUL = translate(
+      [-plateW/2 + boltOfs,  plateH/2 - boltOfs, plateDepth/2],
+      fhBolt_M3(plateDepth + 1));
+  const boltUR = translate(
+      [ plateW/2 - boltOfs,  plateH/2 - boltOfs, plateDepth/2],
+      fhBolt_M3(plateDepth + 1));
+  const boltBL = translate(
+      [-plateW/2 + boltOfs, -plateH/2 + boltOfs, plateDepth/2],
+      fhBolt_M3(plateDepth + 1));
+  const boltBR = translate(
+      [ plateW/2 - boltOfs, -plateH/2 + boltOfs, plateDepth/2],
+      fhBolt_M3(plateDepth + 1));
+
+  const plateOut = subtract(plate, hullsOfs, 
+                            boltUL, boltUR, boltBL,boltBR);
+
+  return plateOut;
+};
 
 module.exports = {main, getParameterDefinitions};
 
