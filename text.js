@@ -25,7 +25,7 @@ const holeBot    = 2.0*radius; // only affects bottom sphere
 
 const plateW      = 182.3;
 const plateH      = 84.4;
-const plateDepth  = 4.1;
+const plateDepth  = 2.4;
 const filetRadius = 2;
 const textZofs    = 0.75;  // fraction of diameter below the surface
 const padSides    = 20;
