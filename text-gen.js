@@ -12,10 +12,11 @@ const debugScale = false;
 const MAX_ANGLE = 90
 
 // ------ default params --------- 
-let fontIdx     = 0;
+let fontIdx     =    0;
 let text        = 'Wyatt';
-let fontsizeAdj = 1.1;
-let vertOfs     = -7;
+let fontsizeAdj =    1;
+let vertOfs     = -5.5;
+let horizOfs    = -1.5;
 let genHulls    = true;
 let genHoles    = true;
 let genPlate    = true;
@@ -512,9 +513,13 @@ const getParameterDefinitions = () => {
       initial: fontsizeAdj, min: 0.25, max: 4.0, 
       step: 0.1, caption: 'Font Size:' 
     },
-    { name: 'vertOfs', type: 'int', 
+    { name: 'vertOfs', type: 'number', 
       initial: vertOfs, min: -plateH, max: plateH, 
-      step: 1, caption: 'Vertical Offset:' 
+      step: .25, caption: 'Vertical Offset:' 
+    },
+    { name: 'horizOfs', type: 'number', 
+      initial: horizOfs, min: -plateW, max: plateW, 
+      step: .25, caption: 'Horizontal Offset:' 
     },
     { name: 'show', type: 'choice', caption: 'Show:', 
       values: [0, 1, 2], initial: 1,
@@ -526,7 +531,8 @@ const getParameterDefinitions = () => {
 }
 
 const main = (params) => {
-  const {fontIdx, text, vertOfs, fontsizeAdj} = params;
+  const {fontIdx, text, 
+         vertOfs, horizOfs, fontsizeAdj} = params;
   const fontKey  = Object.keys(fonts)[fontIdx];
   const font     = fonts[fontKey];
   const fontName = Object.keys(fonts)[fontIdx];
@@ -583,7 +589,7 @@ const main = (params) => {
 
   strWidth  *= textScale;
   strHeight *= textScale;
-  let xOfs   = (plateW - strWidth)/2  - plateW/2;
+  let xOfs   = (plateW - strWidth)/2  - plateW/2 + horizOfs;
   let yOfs   = (plateH - strHeight)/2 - plateH/2 + vertOfs;
 
   if (debugScale) {
