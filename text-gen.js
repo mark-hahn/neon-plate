@@ -6,14 +6,14 @@ const {vectorChar}            = jscad.text;
 const {hull, hullChain}       = jscad.hulls;
 const {translate, translateZ} = jscad.transforms;
 
-const debug      = true;
-const debugScale = true;
+const debug      = false;
+const debugScale = false;
 
 const MAX_ANGLE = 90
 
 // ------ default params --------- 
 let fontIdx     = 0;
-let text        = 'o';
+let text        = 'Wyatt';
 let fontsizeAdj = 1.1;
 let vertOfs     = -7;
 let genHulls    = true;
@@ -305,7 +305,7 @@ const chkTooClose = (vec, first) => {
       chkSharpBend(lastVec, vec);
     }
     else {
-      if(debug) console.log('vec is not extending last');
+      // if(debug) console.log('vec is not extending last');
       if(ptTouchesEnd(vec[0],prevVec)) {
         // vec tail is touching prevVec head or tail
         if(debug)  showVec('tail touches prev', prevVec);
@@ -356,54 +356,56 @@ const chkTooClose = (vec, first) => {
     //   first vector and not extendingLastVec
     if(first && !extendingLastVec) {
 
-      // starting tail dist chk'
-      const dist2prev = distPntToVec(vec[0], prevVec);
-      if(dist2prev < (2 * radius)) {
-        // tail end point too close to an old vec
-        // back up to point on vec far enough away
-        let vec1 = null;
-        const backUpPt = backUpPoint(prevVec, vec, false);
-        console.log('tail too close to old vec, backUpPoint result', 
-                                                backUpPt);
-        if(backUpPt) {
-          // console.log('vec tail too close to prev vec');
-          return {
-            headClose:false, tailClose:true, 
-            vec1:[backUpPt, vec[1]], vec2: null};
-        }
-        else {
-          console.log('both ends of vec too close');
-          return {  // skip vec
-            headClose:true, tailClose:true, 
-            vec1:null, vec2: null};
-        }
-      }
-    }
-    // if(debug) showVec('lastVec:', lastVec);
-    if(vecEq(prevVec, lastVec)) {
-      // if (debug) console.log(
-        // 'prevVec == lastVec, skipping head dist check to last vec');
-    }
-    else {
-      // starting head dist chk
-      const dist2prev = distPntToVec(vec[1], prevVec);
-      // if (debug) console.log('head dist is', dist2prev);
-      if(dist2prev < (2 * radius)) {
-        // head end point too close to an old vec
-        // back up to point on vec far enough away
-        let vec1 = null;
-        const backUpPt = backUpPoint(prevVec, vec, true);
-        console.log('head too close to old vec');
-        if(backUpPt) {
-          vec1 = [vec[0], backUpPt];
-          if(debug)  showVec('new vec', vec1);
-          return {headClose:true, tailClose:false, vec1, vec2: null};
-        }
-        else {
-          if (debug) console.log('both ends too close');
-          return {headClose:true, tailClose:true,  vec1: null, vec2: null};
-        }
-      }
+    //   // starting tail dist chk'
+    //   const dist2prev = distPntToVec(vec[0], prevVec);
+    //   if(dist2prev < (2 * radius)) {
+    //     // tail end point too close to an prev vec
+    //     // back up to point on vec far enough away
+    //     let vec1 = null;
+    //     const backUpPt = backUpPoint(prevVec, vec, false);
+    //     console.log('tail too close to prev vec');
+    //     if(backUpPt)
+    //       console.log(`backUpPoint result ${backUpPt[0].toFixed(1)},` +
+    //                                      `${backUpPt[0].toFixed(1)}`);
+    //     if(backUpPt) {
+    //       // console.log('vec tail too close to prev vec');
+    //       return {
+    //         headClose:false, tailClose:true, 
+    //         vec1:[backUpPt, vec[1]], vec2: null};
+    //     }
+    //     else {
+    //       console.log('both ends of vec too close');
+    //       return {  // skip vec
+    //         headClose:true, tailClose:true, 
+    //         vec1:null, vec2: null};
+    //     }
+    //   }
+    // }
+    // // if(debug) showVec('lastVec:', lastVec);
+    // if(vecEq(prevVec, lastVec)) {
+    //   // if (debug) console.log(
+    //     // 'prevVec == lastVec, skipping head dist check to last vec');
+    // }
+    // else {
+    //   // starting head dist chk
+    //   const dist2prev = distPntToVec(vec[1], prevVec);
+    //   // if (debug) console.log('head dist is', dist2prev);
+    //   if(dist2prev < (2 * radius)) {
+    //     // head end point too close to an old vec
+    //     // back up to point on vec far enough away
+    //     let vec1 = null;
+    //     const backUpPt = backUpPoint(prevVec, vec, true);
+    //     console.log('head too close to old vec');
+    //     if(backUpPt) {
+    //       vec1 = [vec[0], backUpPt];
+    //       if(debug)  showVec('new vec', vec1);
+    //       return {headClose:true, tailClose:false, vec1, vec2: null};
+    //     }
+    //     else {
+    //       if (debug) console.log('both ends too close');
+    //       return {headClose:true, tailClose:true,  vec1: null, vec2: null};
+    //     }
+    //   }
     }
   }
   // vec not too close to any prev vec
@@ -449,6 +451,7 @@ const handlePoint = (point, ptIdx, lastPtInSeg) => {
     prevVecs.push(vec1);
     lastVec = vec1;
     if(debug) showVec('setting lastVec:', lastVec);
+
     if(vec2) {
       // had intersection
       // vec was split into vec1 and vec2
@@ -521,69 +524,43 @@ const main = (params) => {
   const fontName = Object.keys(fonts)[fontIdx];
   console.log(`using font ${fontName}`);
 
-//  87:[[416,-6.3,],[, 416,-6.3+95,] ],
-
-  if(fontPatch?.[fontName]) {
-    const patchChars = fontPatch?.[fontName];
-    console.log(`---- found fontPatch[${fontName}]`);
+  const patchChars = fontPatch?.[fontName];
+  if(patchChars) {
+     console.log(`---- found fontPatch[${fontName}]`);
 
     for(const ascii in font ) {
       if(!ascii || ascii === 'height') continue;
       const charStr = String.fromCharCode(ascii);
-
+      const fontPath = font[ascii];
       if(charWidthOfs[fontName]?.[ascii]) {
-        const oldWidth = font[ascii][0];
+        const oldWidth = fontPath[0];
         const newWidth = oldWidth + charWidthOfs[fontName][ascii];
-        font[ascii][0] = newWidth;
+        fontPath[0]    = newWidth;
         console.log("char ofs match", {charStr, oldWidth, newWidth});
       }
-
-      if(patchChars[ascii].entries()) {
-        // array of point patches
-        const fontPoints    = font[ascii];
-        const excludePoints = patchChars[ascii];
-        console.log(`---- matched char[${charStr}], `+
-                         `font length: ${fontPoints.length}, ` +
-                         `exclude length: ${excludePoints.length}`);
-
-        pointLoop:
-        for (const exclPoint of excludePoints.entries()) {
-          const [idx, ex] = exclPoint;
-          if(idx & 1) continue;  // skip second number (y) of point
-          const ey = excludePoints[idx+1];
-          // console.log(`-------- exclude point: ${ex},${ey}`);
-          let ptCnt = 0;
-          
-          for (const fontPoint of fontPoints.entries()) {
-            const [idx, fx] = fontPoint;
-            // idx == 0   => char width
-            // ptCnt == 1 => second number in point (y)
-            // !fx        => segment separator
-            if(idx == 0 || ptCnt == 1 || !fx) {
-              ptCnt = 0;
-              continue;
+      const patchList = patchChars[ascii];
+      if(patchList?.length) {
+        console.log(patchList.length, {patchList});
+        for (const patch of patchList) {
+          [fromArr, toArr] = patch;
+          // console.log({fromArr, toArr});
+          for(let i=1; i <= (fontPath.length - fromArr.length); i++) {
+            let j;
+            for(j = 0; j < fromArr.length; j++) {
+              // console.log(`fromArr[${j}]:${fromArr[j]}, fontPath[${i}]:${fontPath[i]}`);
+              if(fromArr[j] != fontPath[i+j]) break;
             }
-            const fy = fontPoints[idx+1];
-            // console.log(`-------- font point: ${fx},${fy}`);
-            if(ex == fx && ey == fy) {
-              fontPoints.splice(idx,2);
-              console.log(`-------- deleted match: ${ex},${ey}, ` +
-                          `new length: ${fontPoints.length}`);
-              continue pointLoop;
+            if(j == fromArr.length) {
+              // matches fontPath from i thru i + fromArr.length
+              fontPath.splice(i, fromArr.length, ...toArr);
+              console.log(`patched fontPath for char ${charStr}`, fontPath);
+              break;
             }
-            ptCnt++;
           }
         }
       }
     }
   }
-  for(const ascii in font) {
-    if(!ascii || ascii === 'height') continue;
-    const charStr    = String.fromCharCode(ascii);
-    const fontPoints = font[ascii];
-    console.log(`${charStr} font length: ${fontPoints.length}`);
-  }
-
   switch(params.show) {
     case 0: genHulls = true; genHoles = true; 
             genPlate = true; break;
@@ -592,7 +569,7 @@ const main = (params) => {
     case 2: genHulls = true; genHoles = false; 
             genPlate = false; break;
   }
-  console.log("---- main ----");
+  console.log("\n\n---- main ----\n");
 
   let strWidth  = 0;
   let strHeight = 0;
@@ -636,9 +613,9 @@ const main = (params) => {
     segments.forEach( (seg) => {
       let ptIdx  = 0;
       seg.every( (point, segIdx) => {
-        if(ptIdx == 0)
-          console.log("\n--- seg ---, points remaining: ", seg.length - segIdx);
         do {
+          if(ptIdx == 0)
+            console.log("\n--- seg ---, points remaining: ", seg.length - segIdx);
           point[0] *= textScale;
           point[1] *= textScale;
           ptIdx = handlePoint(point, ptIdx, segIdx == seg.length-1);
@@ -701,23 +678,7 @@ const main = (params) => {
 };
 module.exports = {main, getParameterDefinitions};
 
-// char must be in fontPatch
-const charWidthOfs = {  
-  EMSHerculean:{ /* W */ 87: -40, },
-}
-
-const fontPatch = {  EMSHerculean:{
-// W
-87:[[416,-6.3,],[, 416,-6.3+95,] ],
-// y
-121:[],
-// a
-97:[],
-// t
-116:[],
-},}
-
-/*
+/* y
 121:[501, 78.8,394, 78.8,161, 88.2,117, 120,59.9, 176,15.8,
      236,0, 293,3.15, 353,40.9, 394,88.2, 416,135, 416,394, 
      , 416,-6.3+95, 
@@ -734,9 +695,27 @@ const fontPatch = {  EMSHerculean:{
 // 111:[384,129,258,75.6,293,44.1,337,47.2,419,107,469,180,472,227,441,261,378,274,293,261,189,208,75.6,142,12.6,107,3.15,41,6.3,-6.3,59.9,-9.45,145,18.9,233,56.7,280,110,324,154,353,205,372,280,372,328,362,],
 // 119:[699,170,378,53.5,205,-3.15,88.2,-9.45,34.6,18.9,0,66.1,9.45,107,47.2,208,173,315,324,337,328,334,230,343,129,365,56.7,397,12.6,441,3.15,504,40.9,570,145,592,243,592,312,580,362,548,410,],},
 
-//=== Fonts injected by jscad-font-gen ===
-const fonts = {"SLFWhiteLinen-Regular":{height:769,
+// char must also be in fontPatch
+const charWidthOfs = {  
+  EMSHerculean:{ /* W */ 87: -40, },
+}
 
-/* o */ 111:[231, 170,290, 208.00,290.00, 211.52,280.36, 214.56,270.94, 217.14,261.73, 219.25,252.75, 220.89,243.98, 222.06,235.44, 222.77,227.11, 223.00,219.00, 223.00,150.00, 206.50,114.84, 189.50,84.38, 172.00,58.59, 154.00,37.50, 135.50,21.09, 116.50,9.38, 97.00,2.34, 77.00,0.00, 35.00,0.00, 33.13,11.28, 31.50,22.13, 30.13,32.53, 29.00,42.50, 28.13,52.03, 27.50,61.13, 27.13,69.78, 27.00,78.00, 27.00,150.00, 41.55,182.81, 56.99,211.25, 73.33,235.31, 90.56,255.00, 108.68,270.31, 127.70,281.25, 147.61,287.81, 168.41,290.00, ],},
+const fontPatch = {  EMSHerculean:{
+  // W
+  87:[],
+  // y
+  121:[ [ [416,-6.3,],[, 416,-6.3+95,] ] ],
+}}
+
+//=== Fonts injected by jscad-font-gen ===
+const fonts = {"EMSHerculean":{height:500,
+
+/* W */ 87:[958, 59.9,662, 334,25.2, 617,662, , 343,662, 621,22.1, 904,665, ],
+
+/* a */ 97:[551, 466,211, 463,255, 425,318, 365,375, 287,400, 205,391, 139,353, 91.4,296, 66.1,236, 69.3,167, 94.5,97.6, 139,47.2, 211,9.45, 280,3.15, 372,31.5, 425,85.1, 457,139, 469,186, 469,394, 469,12.6, ],
+
+/* t */ 116:[258, 208,6.3, 170,12.6, 132,34.6, 101,66.1, 81.9,107, 78.8,151, 78.8,387, 205,387, 78.8,387, 78.8,551, ],
+
+/* y */ 121:[501, 78.8,394, 78.8,161, 88.2,117, 120,59.9, 176,15.8, 236,0, 293,3.15, 353,40.9, 394,88.2, 416,135, 416,394, 416,-6.3, 397,-66.1, 362,-113, 315,-148, 261,-167, 208,-167, 148,-142, 113,-117, 94.5,-94.5, ],},
 }
 //=== End of injected fonts ===
