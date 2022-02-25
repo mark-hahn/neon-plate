@@ -6,8 +6,8 @@ const {vectorChar}            = jscad.text;
 const {hull, hullChain}       = jscad.hulls;
 const {translate, translateZ} = jscad.transforms;
 
-const debug      = false;
-const debugScale = false;
+const debug      = true;
+const debugScale = true;
 
 const MAX_ANGLE = 90
 
@@ -264,12 +264,20 @@ const chkSharpBend = (lastVec, vec) => {
   let angle2  = Math.atan(y2/x2)* rad2deg;
   if(x1 < 0) angle1 += 180;
   if(x2 < 0) angle2 += 180;
-  // if(debug) console.log('angle calc result', {angle1,angle2});
-  const angle = Math.abs(angle2 - angle1);
-  // if(debug) console.log('angle', {angle});
+  let minAngle = Math.min();
+  for(let i=-1; i <= +1; i++) {
+    for(let j=-1; j <= +1; j++) {
+      const a1  = angle1 + i*360;
+      const a2  = angle2 + j*360;
+      const dif = Math.abs(a2 - a1);
+      minAngle  = Math.min(dif,minAngle);
+    }
+  }
+  let angle = minAngle;
+  if(debug) console.log('angle', {angle});
   if(angle > MAX_ANGLE) {
     if(debug) console.log(
-      `bend too sharp, adding 2 holes at ${p2[0]},${p2[1]}`);
+      `bend too sharp, adding 2 holes at ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`);
     addHole(p1,p2, 'bend too sharp');
     addHole(p3,p2, '              ');
   }
@@ -526,32 +534,20 @@ const main = (params) => {
 
   const patchChars = fontPatch?.[fontName];
   if(patchChars) {
-     console.log(`---- found fontPatch[${fontName}]`);
-
+    console.log(`---- found fontPatch[${fontName}]`);
     for(const ascii in font ) {
       if(!ascii || ascii === 'height') continue;
-      const charStr = String.fromCharCode(ascii);
-      const fontPath = font[ascii];
-      if(charWidthOfs[fontName]?.[ascii]) {
-        const oldWidth = fontPath[0];
-        const newWidth = oldWidth + charWidthOfs[fontName][ascii];
-        fontPath[0]    = newWidth;
-        console.log("char ofs match", {charStr, oldWidth, newWidth});
-      }
+      const charStr   = String.fromCharCode(ascii);
+      const fontPath  = font[ascii];
       const patchList = patchChars[ascii];
       if(patchList?.length) {
-        console.log(patchList.length, {patchList});
+        // console.log(patchList.length, {patchList});
         for (const patch of patchList) {
           [fromArr, toArr] = patch;
-          // console.log({fromArr, toArr});
-          for(let i=1; i <= (fontPath.length - fromArr.length); i++) {
-            let j;
-            for(j = 0; j < fromArr.length; j++) {
-              // console.log(`fromArr[${j}]:${fromArr[j]}, fontPath[${i}]:${fontPath[i]}`);
+          for(let i=0; i <= (fontPath.length - fromArr.length); i++) {
+            let j; for(j = 0; j < fromArr.length; j++)
               if(fromArr[j] != fontPath[i+j]) break;
-            }
             if(j == fromArr.length) {
-              // matches fontPath from i thru i + fromArr.length
               fontPath.splice(i, fromArr.length, ...toArr);
               console.log(`patched fontPath for char ${charStr}`, fontPath);
               break;
@@ -619,7 +615,7 @@ const main = (params) => {
           point[0] *= textScale;
           point[1] *= textScale;
           ptIdx = handlePoint(point, ptIdx, segIdx == seg.length-1);
-          console.log('handlePoint returned:', {ptIdx});
+          // console.log('handlePoint returned:', {ptIdx});
         } while (ptIdx === 0);
         return (ptIdx !== null);
       });
@@ -678,33 +674,17 @@ const main = (params) => {
 };
 module.exports = {main, getParameterDefinitions};
 
-/* y
-121:[501, 78.8,394, 78.8,161, 88.2,117, 120,59.9, 176,15.8,
-     236,0, 293,3.15, 353,40.9, 394,88.2, 416,135, 416,394, 
-     , 416,-6.3+95, 
-     397,-66.1, 362,-113, 315,-148, 261,-167, 208,-167, 148,-142,
-     113,-117, 94.5,-94.5,],
-*/
-
-
-// const fonts = {
-// EMSQwandry:{height:500,
-// 66:[810,350,614,198,362,117,167,69.3,22,63,-88.2,94.5,-139,,246,3.15,362,-37.8,532,-9.45,630,69.3,674,161,643,236,554,293,476,306,403,321,324,318,324,306,510,362,690,463,753,539,765,630,718,687,567,721,394,718,224,677,-9.45,602,],
-// 101:[372,101,202,180,224,255,290,277,337,277,384,249,410,205,416,132,378,47.2,274,-15.8,161,-28.4,85.1,-22,34.6,18.9,-6.3,97.6,-9.45,167,31.5,227,91.4,274,148,312,202,],
-// 105:[268,126,400,63,265,28.4,135,15.8,12.6,37.8,-22,78.8,-12.6,129,25.2,,158,520,233,586,208,520,158,520,],
-// 111:[384,129,258,75.6,293,44.1,337,47.2,419,107,469,180,472,227,441,261,378,274,293,261,189,208,75.6,142,12.6,107,3.15,41,6.3,-6.3,59.9,-9.45,145,18.9,233,56.7,280,110,324,154,353,205,372,280,372,328,362,],
-// 119:[699,170,378,53.5,205,-3.15,88.2,-9.45,34.6,18.9,0,66.1,9.45,107,47.2,208,173,315,324,337,328,334,230,343,129,365,56.7,397,12.6,441,3.15,504,40.9,570,145,592,243,592,312,580,362,548,410,],},
-
-// char must also be in fontPatch
-const charWidthOfs = {  
-  EMSHerculean:{ /* W */ 87: -40, },
-}
-
 const fontPatch = {  EMSHerculean:{
-  // W
-  87:[],
-  // y
+// W
+  87:[[[ 958, 59.9 ],[ 958 -40, 59.9 ]]],
+ // y
   121:[ [ [416,-6.3,],[, 416,-6.3+95,] ] ],
+// a
+  97:[[[  
+  466,211, 463,255, 425,318, 365,375, 287,400, 205,391, 139,353, 91.4,296, 66.1,236, 69.3,167, 94.5,97.6, 139,47.2, 211,9.45, 280,3.15, 372,31.5, 425,85.1, 457,139, 469,186, 
+],[  
+ /* 466,211, */ 463,255, 425,318, 365,375, 287,400, 205,391, 139,353, 91.4,296,  66.1,236,  69.3,167, 94.5,97.6, 139,47.2, 211,9.45, 280,3.15, 372,31.5, 425,85.1, 457,139, /*469,186*/ ,
+]]],
 }}
 
 //=== Fonts injected by jscad-font-gen ===
