@@ -6,14 +6,14 @@ const {vectorChar}            = jscad.text;
 const {hull, hullChain}       = jscad.hulls;
 const {translate, translateZ} = jscad.transforms;
 
-const debug      = false;
-const debugScale = false;
+const debug      = true;
+const debugScale = true;
 
 const MAX_ANGLE = 90
 
 // ------ default params --------- 
 let fontIdx     =    0;
-let text        = 'Wyatt';
+let text        = 'Cameron';
 let fontsizeAdj =    1;
 let vertOfs     = -5.5;
 let horizOfs    = -1.5;
@@ -290,52 +290,52 @@ let prevVecs = [];
 
 const chkTooClose = (vec, first) => {
 
+  // ------ check ends touching  ------
+  // check if vec is extending last, vec tail == lastVec.head
+  // if(debug) showVec('checking vec extension, lastVec', lastVec);
+  // if(debug) showVec('                            vec', vec);
+  const extendingLastVec = lastVec && (ptEq(vec[0], lastVec[1]));
+  if(extendingLastVec) {
+    if(debug) console.log('vec is extending last');
+    chkSharpBend(lastVec, vec);
+  }
+
   // let prevVecsTmp = (first ? prevVecs : prevVecs.slice(0,-1));
   // checking against all previous vecs (slow way)
   for(const prevVec of prevVecs) {
     if(debug) showVec('- checking prev vec', prevVec);
 
-    // check exact match either direction with prev vec
-    // if(debug)  showVec('check exact match, old vec', prevVec);
-    // if(debug)  showVec('                   new vec', vec);
-    if(vecEq(prevVec, vec) || vecRevEq(prevVec, vec)) {
-      if(debug) showVec('vec exactly matches prevVec', prevVec);
-      return {  // skip vec
-        headClose:true, tailClose:true, vec1:null, vec2: null};
-    }
+    // // check exact match either direction with prev vec
+    // // if(debug)  showVec('check exact match, old vec', prevVec);
+    // // if(debug)  showVec('                   new vec', vec);
+    // if(vecEq(prevVec, vec) || vecRevEq(prevVec, vec)) {
+    //   if(debug) showVec('vec exactly matches prevVec', prevVec);
+    //   return {  // skip vec
+    //     headClose:true, tailClose:true, vec1:null, vec2: null};
+    // }
 
-    // ------ check ends touching  ------
-    // check if vec is extending last, vec tail == lastVec.head
-    // if(debug) showVec('checking vec extension, lastVec', lastVec);
-    // if(debug) showVec('                            vec', vec);
-    const extendingLastVec = lastVec && (ptEq(vec[0], lastVec[1]));
-    if(extendingLastVec) {
-      if(debug) console.log('vec is extending last');
-      chkSharpBend(lastVec, vec);
-    }
-    else {
-      // if(debug) console.log('vec is not extending last');
-      if(ptTouchesEnd(vec[0],prevVec)) {
-        // vec tail is touching prevVec head or tail
-        if(debug)  showVec('tail touches prev', prevVec);
-        const backUpPnt = backUpPoint(prevVec, vec, false);
-        if(!backUpPnt) return {
-          headClose:false, tailClose:true, vec1:null, vec2:null};
-        return {
-          headClose:false, tailClose:true, 
-          vec1:[backUpPnt, vec[1]], vec2:null};
-      }
-    }
-    if(ptTouchesEnd(vec[1],prevVec)) {
-      // vec head is touching prevVec head or tail
-      if(debug)  showVec('head touching prev', prevVec);
-      const backUpPnt = backUpPoint(prevVec, vec, true);
-      if(!backUpPnt) return {
-        headClose:true, tailClose:false, vec1:null, vec2:null};
-      return {
-        headClose:true, tailClose:false, 
-        vec1:[vec[0], backUpPnt], vec2:null};
-    }
+    // // if(debug) console.log('vec is not extending last');
+    // if(ptTouchesEnd(vec[0],prevVec)) {
+    //   // vec tail is touching prevVec head or tail
+    //   if(debug)  showVec('tail touches prev', prevVec);
+    //   const backUpPnt = backUpPoint(prevVec, vec, false);
+    //   if(!backUpPnt) return {
+    //     headClose:false, tailClose:true, vec1:null, vec2:null};
+    //   return {
+    //     headClose:false, tailClose:true, 
+    //     vec1:[backUpPnt, vec[1]], vec2:null};
+    // }
+
+    // if(ptTouchesEnd(vec[1],prevVec)) {
+    //   // vec head is touching prevVec head or tail
+    //   if(debug)  showVec('head touching prev', prevVec);
+    //   const backUpPnt = backUpPoint(prevVec, vec, true);
+    //   if(!backUpPnt) return {
+    //     headClose:true, tailClose:false, vec1:null, vec2:null};
+    //   return {
+    //     headClose:true, tailClose:false, 
+    //     vec1:[vec[0], backUpPnt], vec2:null};
+    // }
 
     // ------ check vecs intersection  ------
     const intPt = (intersectionPoint(vec, prevVec));
@@ -605,6 +605,8 @@ const main = (params) => {
     console.log({charRes});
     let {width, segments} = charRes;
 
+    console.log({font, width, segments});
+
     if(segments.length == 0) {
       console.log(`\n\n---- Error: character ${char} not in font ----\n\n`);
       continue;
@@ -615,11 +617,12 @@ const main = (params) => {
     segments.forEach( (seg) => {
       let ptIdx  = 0;
       seg.every( (point, segIdx) => {
+        point[0] *= textScale;
+        point[1] *= textScale;
         do {
           if(ptIdx == 0)
-            console.log("\n--- seg ---, points remaining: ", seg.length - segIdx);
-          point[0] *= textScale;
-          point[1] *= textScale;
+            console.log("\n--- seg ---, points remaining: ", 
+                         seg.length - segIdx);
           ptIdx = handlePoint(point, ptIdx, segIdx == seg.length-1);
           // console.log('handlePoint returned:', {ptIdx});
         } while (ptIdx === 0);
@@ -710,15 +713,27 @@ const fontPatch = {  EMSHerculean:{
 ]]],
 }}
 
+
+
 //=== Fonts injected by jscad-font-gen ===
-const fonts = {"EMSHerculean":{height:500,
+const fonts = {
+"camBamStick9Font":{height:50,
+/* C */ 67: [62, 53,9, 46,9, 41,9, 38,10, 33,12, 29,14, 26,16, 22,19, 18,23, 16,26, 14,31, 12,35, 11,38, 11,41, 10,47, 10,52, 11,56, 13,61, 15,66, 17,69, 21,73, 25,77, 28,79, 33,82, 37,84, 40,85, 43,85, 50,85, 53,85, 50,85, 43,85, 40,85, 37,84, 33,82, 28,79, 25,77, 21,73, 17,69, 15,66, 13,61, 11,56, 10,52, 10,47, 11,41, 11,38, 12,35, 14,31, 16,26, 18,23, 22,19, 26,16, 29,14, 33,12, 38,10, 41,9, 46,9, 53,9],
 
-/* W */ 87:[958, 59.9,662, 334,25.2, 617,662, , 343,662, 621,22.1, 904,665, ],
+/* a */ 97: [69, 43,10, 41,9, 40,9, 39,8, 38,8, 34,8, 30,8, 27,8, 24,10, 20,11, 18,13, 16,15, 13,18, 12,20, 11,23, 9,27, 9,30, 9,34, 9,38, 9,41, 11,44, 12,48, 13,50, 16,52, 18,55, 20,56, 24,58, 27,59, 30,60, 34,60, 38,60, 40,59, 44,58, 47,57, 49,55, 52,53, 53,52, 54,51, 55,49, 57,46, 58,43, 58,41, 58,37, 58,9, 58,37, 58,41, 58,43, 57,46, 55,49, 54,51, 53,52, 52,53, 49,55, 47,57, 44,58, 40,59, 38,60, 34,60, 30,60, 27,59, 24,58, 20,56, 18,55, 16,52, 13,50, 12,48, 11,44, 9,41, 9,38, 9,34, 9,30, 9,27, 11,23, 12,20, 13,18, 16,15, 18,13, 20,11, 24,10, 27,8, 30,8, 34,8, 37,8, 38,8, 39,8, 40,9, 43,10],
 
-/* a */ 97:[551, 466,211, 463,255, 425,318, 365,375, 287,400, 205,391, 139,353, 91.4,296, 66.1,236, 69.3,167, 94.5,97.6, 139,47.2, 211,9.45, 280,3.15, 372,31.5, 425,85.1, 457,139, 469,186, 469,394, 469,12.6, ],
+/* e */ 101: [69, 59,26, 57,21, 57,19, 56,18, 55,17, 54,16, 50,12, 46,10, 45,9, 43,8, 41,8, 35,8, 31,8, 28,8, 24,10, 21,11, 19,13, 16,15, 14,18, 13,20, 11,23, 10,27, 9,29, 9,34, 9,38, 10,41, 11,44, 13,48, 14,50, 16,52, 19,55, 21,56, 24,58, 28,59, 31,59, 35,59, 38,59, 40,59, 42,59, 43,58, 48,56, 51,54, 52,53, 53,53, 54,52, 54,51, 56,47, 26,31, 56,47, 55,50, 54,52, 53,52, 53,53, 52,54, 48,56, 45,58, 43,59, 41,59, 40,59, 35,59, 31,59, 28,59, 24,58, 21,56, 19,55, 16,52, 14,50, 13,48, 11,44, 10,41, 9,38, 9,34, 9,29, 10,27, 11,23, 13,20, 14,18, 16,15, 19,13, 21,11, 24,10, 28,8, 31,8, 35,8, 39,8, 42,8, 43,9, 45,9, 50,12, 53,15, 55,16, 56,18, 57,19, 59,26],
 
-/* t */ 116:[258, 208,6.3, 170,12.6, 132,34.6, 101,66.1, 81.9,107, 78.8,151, 78.8,387, 205,387, 78.8,387, 78.8,551, ],
+/* m */ 109: [89, 12,9, 12,43, 12,46, 12,48, 13,50, 14,52, 14,53, 15,54, 16,55, 18,56, 19,57, 21,58, 23,59, 25,59, 27,59, 32,59, 34,59, 35,59, 36,59, 36,58, 37,58, 38,56, 40,54, 43,52, 43,51, 44,50, 44,49, 45,47, 45,40, 45,9, 45,40, 45,45, 45,47, 45,48, 46,49, 46,51, 48,52, 49,54, 52,57, 53,58, 54,59, 55,59, 56,59, 62,59, 64,59, 66,59, 68,58, 70,57, 72,56, 73,55, 75,53, 76,52, 77,50, 77,48, 78,46, 78,43, 78,9, 78,43, 78,46, 77,48, 77,50, 76,52, 75,53, 73,55, 72,56, 70,57, 68,58, 66,59, 64,59, 62,59, 58,59, 56,59, 54,59, 53,58, 52,58, 51,56, 49,54, 47,52, 46,51, 46,50, 45,49, 45,47, 45,40, 45,9, 45,40, 45,45, 44,47, 44,48, 44,49, 43,51, 42,52, 40,54, 38,57, 37,58, 36,58, 35,59, 34,59, 33,59, 27,59, 25,59, 23,59, 21,58, 19,57, 18,56, 16,55, 15,54, 14,53, 14,52, 13,50, 12,48, 12,46, 12,43, 12,9],
 
-/* y */ 121:[501, 78.8,394, 78.8,161, 88.2,117, 120,59.9, 176,15.8, 236,0, 293,3.15, 353,40.9, 394,88.2, 416,135, 416,394, 416,-6.3, 397,-66.1, 362,-113, 315,-148, 261,-167, 208,-167, 148,-142, 113,-117, 94.5,-94.5, ],},
-}
+/* n */ 110: [62, 11,9, 11,39, 11,41, 11,43, 12,46, 13,49, 14,51, 16,53, 18,55, 20,56, 22,58, 24,59, 26,59, 27,59, 31,60, 35,59, 36,59, 38,59, 40,58, 42,56, 44,55, 46,53, 48,51, 49,49, 50,46, 50,43, 51,41, 51,39, 51,9, 51,39, 51,41, 50,43, 50,46, 49,49, 48,51, 46,53, 44,55, 42,56, 40,58, 38,59, 36,59, 35,59, 31,60, 27,59, 26,59, 24,59, 22,58, 20,56, 18,55, 16,53, 14,51, 13,49, 12,46, 11,43, 11,41, 11,39, 11,9],
+
+/* o */ 111: [69, 9,34, 9,38, 10,41, 11,44, 13,48, 14,50, 16,52, 19,55, 21,56, 24,58, 28,59, 30,59, 34,59, 38,59, 41,59, 44,58, 48,56, 50,55, 52,52, 55,50, 56,48, 58,44, 59,41, 59,38, 60,34, 59,29, 59,27, 58,23, 56,20, 55,18, 52,15, 50,13, 48,11, 44,10, 41,8, 38,8, 34,8, 30,8, 28,8, 24,10, 21,11, 19,13, 16,15, 14,18, 13,20, 11,23, 10,27, 9,29, 9,34,
+/* segment */, 9,34, 9,29, 10,27, 11,23, 13,20, 14,18, 16,15, 19,13, 21,11, 24,10, 28,8, 30,8, 34,8, 38,8, 41,8, 44,10, 48,11, 50,13, 52,15, 55,18, 56,20, 58,23, 59,27, 59,29, 60,34, 59,38, 59,41, 58,44, 56,48, 55,50, 52,52, 50,55, 48,56, 44,58, 41,59, 38,59, 34,59, 30,59, 28,59, 24,58, 21,56, 19,55, 16,52, 14,50, 13,48, 11,44, 10,41, 9,38, 9,34],
+
+/* r */ 114: [34, 11,9, 11,33, 11,38, 11,41, 12,44, 13,48, 14,50, 16,52, 18,54, 19,55, 20,56, 22,57, 25,58, 26,59, 29,59, 26,59, 25,58, 22,57, 20,56, 19,56, 18,55, 16,52, 14,50, 13,48, 12,44, 11,41, 11,38, 11,33, 11,9,
+/* segment */, 11,9, 11,58, 11,9],
+},
+};
+
 //=== End of injected fonts ===
