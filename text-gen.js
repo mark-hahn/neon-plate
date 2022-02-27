@@ -6,8 +6,8 @@ const {vectorChar}            = jscad.text;
 const {hull, hullChain}       = jscad.hulls;
 const {translate, translateZ} = jscad.transforms;
 
-const debug      = true;
-const debugScale = true;
+const debug      = false;
+const debugScale = false;
 
 const MAX_ANGLE = 90
 
@@ -731,7 +731,7 @@ camBamStick9Font: {
 /* r */ 114: [[[
 11,9, 11,33, 11,38, 11,41, 12,44, 13,48, 14,50, 16,52, 18,54, 19,55, 20,56, 22,57, 25,58, 26,59, 29,59, 26,59, 25,58, 22,57, 20,56, 19,56, 18,55, 16,52, 14,50, 13,48, 12,44, 11,41, 11,38, 11,33, 11,9,
 /* segment */, 11,9, 11,58, 11,9
-],[ 12,44, 13,48, 14,50, 16,52, 18,54, 19,55, 20,56, 22,57, 25,58, 26,59, 29,59, 
+],[ 13,48, 14,50, 16,52, 18,54, 19,55, 20,56, 22,57, 25,58, 26,59, 
 /* segment */, 11,58, 11,9
 ]]],
 
