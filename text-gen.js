@@ -13,7 +13,7 @@ const MAX_ANGLE = 90
 
 // ------ default params --------- 
 let fontIdx     =    0;
-let text        = 'w';
+let text        = 'i';
 let fontsizeAdj =    1;
 let vertOfs     = -5.5;
 let horizOfs    = -1.5;
@@ -788,6 +788,26 @@ Fontain152: {
       ]  //  end first ltr patch
     ], // end ltr
     
+    /*
+     glyph-name="i" d="
+     M 72 455    
+     C 72 302 72 149 72 -4 
+     M 74.92 594.84 
+     C 35.88 594.84 39.3 542.85 72.54 542.85 
+     C 106.52 542.85 108.26 594.12 73.25 594.75" 
+     */
+
+  /* i */ 105:
+    [ // begin ltr
+      [  // begin first ltr patch
+        [  //  begin target
+          72.00,-4.00, , 74.92,594.84, 62.25,592.61, 53.40,586.72, 48.25,578.39, 
+        ], // end target
+        [  // begin replacement
+          72.00,-4.00,  , 74.92,594.84, , 62.25,592.61, , 53.40,586.72, , 48.25,578.39, 
+        ]  //  end replacement
+      ]  //  end first ltr patch
+    ], // end ltr
   } // end Fontain152
 
 } // end patch
