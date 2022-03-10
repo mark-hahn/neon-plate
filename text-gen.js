@@ -13,7 +13,7 @@ const MAX_ANGLE = 90
 
 // ------ default params --------- 
 let fontIdx     =    0;
-let text        = 'i';
+let text        = 'Bowie';
 let fontsizeAdj =    1;
 let vertOfs     = -5.5;
 let horizOfs    = -1.5;
@@ -288,6 +288,8 @@ const chkSharpBend = (lastVec, vec) => {
 let lastVec = null;
 let prevVecs = [];
 
+let blkCloseChk = false;
+
 const chkTooClose = (vec, first) => {
 
   // ------ check ends touching  ------
@@ -359,7 +361,7 @@ const chkTooClose = (vec, first) => {
 
       return {headClose:true, tailClose:true, vec1, vec2};
     }
-
+if(!blkCloseChk) {
     // ------ check for either vec end point too close ------
     // tail point of vec only checked on ...
     //   first vector and not extendingLastVec
@@ -417,6 +419,7 @@ const chkTooClose = (vec, first) => {
         }
       }
     }
+  }
   }
   // vec not too close to any prev vec
   return {headClose:false, tailClose:false, vec1: null, vec2: null};
@@ -605,6 +608,8 @@ const main = (params) => {
 
   let xOffset = 0;
   for(const char of text) {
+    if(char == 'i') blkCloseChk = true;
+    else            blkCloseChk = false;
     prevVecs = [];
     const charRes = vectorChar({font, xOffset}, char);
     console.log({charRes});
@@ -787,15 +792,6 @@ Fontain152: {
         ]  //  end replacement
       ]  //  end first ltr patch
     ], // end ltr
-    
-    /*
-     glyph-name="i" d="
-     M 72 455    
-     C 72 302 72 149 72 -4 
-     M 74.92 594.84 
-     C 35.88 594.84 39.3 542.85 72.54 542.85 
-     C 106.52 542.85 108.26 594.12 73.25 594.75" 
-     */
 
   /* i */ 105:
     [ // begin ltr
@@ -808,7 +804,8 @@ Fontain152: {
         ]  //  end replacement
       ]  //  end first ltr patch
     ], // end ltr
-  } // end Fontain152
+
+} // end Fontain152
 
 } // end patch
 
